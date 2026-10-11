@@ -21,6 +21,7 @@
   --bg: #120c24;
   --accent: #f43f5e;
   --accent2: #22d3ee;
+  --gold: #fde047;
   --text: #f8fafc;
   --text-dim: #94a3b8;
   --sat: env(safe-area-inset-top, 0px);
@@ -28,138 +29,213 @@
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
   --font-main: "Zen Kaku Gothic New", -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-  --font-round: "M PLUS Rounded 1c", sans-serif;
+  --font-round: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body {
   width: 100%; height: 100%; height: 100dvh; overflow: hidden; overscroll-behavior: none;
-  background: linear-gradient(180deg, #120c24 0%, #241342 55%, #0d081a 100%); color: var(--text); font-family: var(--font-main);
+  background: radial-gradient(circle at 50% 25%, #2a1454 0%, #140b29 55%, #090514 100%);
+  color: var(--text); font-family: var(--font-main);
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 #app {
-  position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
-  padding: calc(var(--sat) + 10px) calc(var(--sar) + 14px) calc(var(--sab) + 12px) calc(var(--sal) + 14px);
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(var(--sat) + 4px) calc(var(--sar) + 4px) calc(var(--sab) + 4px) calc(var(--sal) + 4px);
+}
+
+/* 論理座標 400×780 ステージラッパー */
+#stage-wrap {
+  position: relative;
+  width: min(100%, calc((100dvh - var(--sat) - var(--sab) - 8px) * 400 / 780));
+  height: min(100%, calc((100vw - var(--sal) - var(--sar) - 8px) * 780 / 400));
+  aspect-ratio: 400 / 780;
+  max-width: 440px;
+  max-height: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#game-canvas {
+  width: 100%; height: 100%; display: block; touch-action: none;
+  border-radius: 20px;
+  box-shadow: 0 12px 42px rgba(0, 0, 0, 0.75);
+}
+
+/* ステージ上の透明操作ボタン（DOMクリック・アクセシビリティ＆タッチ両対応） */
+.hud-hit-btn {
+  position: absolute;
+  background: transparent;
+  border: none;
+  color: transparent;
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  z-index: 6;
+  border-radius: 12px;
+}
+.hud-hit-btn:active {
+  background: rgba(244, 63, 94, 0.14);
+}
+
+/* オーバーレイ画面（タイトル・一時停止・リザルト） */
+.screen-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: calc(var(--sat) + 10px) calc(var(--sar) + 14px) calc(var(--sab) + 10px) calc(var(--sal) + 14px);
+  background: rgba(8, 5, 18, 0.68);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 .top-bar {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px; z-index: 20;
+  width: min(92vw, 376px);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-bottom: 10px; z-index: 45;
 }
 .bar-btn {
-  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
-  background: rgba(15, 23, 42, 0.78); border: 1.5px solid rgba(255, 255, 255, 0.18);
-  color: #f8fafc; font-family: var(--font-round); font-size: 12.5px; font-weight: 800;
-  cursor: pointer; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc; font-family: var(--font-round); font-size: 12px; font-weight: 800;
+  cursor: pointer; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  touch-action: manipulation;
 }
 .bar-btn:active { transform: scale(0.96); }
 .bar-btn.pri { border-color: var(--accent); color: #fde047; }
 
-#game-canvas {
-  flex: 1; width: 100%; min-height: 0; display: block; touch-action: none;
-}
-
 .center-card {
-  width: min(92vw, 376px); margin: auto; background: rgba(17, 22, 37, 0.92);
-  border: 2px solid var(--accent); border-radius: 26px; padding: 22px 18px;
-  box-shadow: 0 18px 45px rgba(0,0,0,0.65); text-align: center; z-index: 15;
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  width: min(92vw, 376px); background: rgba(17, 14, 34, 0.95);
+  border: 2px solid var(--accent); border-radius: 24px; padding: 18px 16px;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.78); text-align: center;
 }
-.hero-icon { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 10px; display: block; box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
+.hero-icon { width: 64px; height: 64px; border-radius: 16px; margin: 0 auto 8px; display: block; box-shadow: 0 8px 20px rgba(0,0,0,0.45); }
 .genre-badge {
-  display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 900;
-  background: rgba(255,255,255,0.08); color: var(--accent2); border: 1px solid rgba(255,255,255,0.14);
-  margin-bottom: 6px;
+  display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 900;
+  background: rgba(244,63,94,0.16); color: var(--accent2); border: 1px solid rgba(244,63,94,0.4);
+  margin-bottom: 4px;
 }
 .game-title {
-  font-family: var(--font-round); font-size: 24px; font-weight: 900; line-height: 1.2; color: #fff;
+  font-family: var(--font-round); font-size: 21px; font-weight: 900; line-height: 1.22; color: #fff;
+  text-shadow: 0 2px 10px rgba(244,63,94,0.45);
 }
 .game-en {
-  font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 8px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 6px;
 }
 .tagline {
-  font-size: 13px; font-weight: 800; color: #fde047; margin-bottom: 12px;
+  font-size: 12.5px; font-weight: 800; color: #fde047; margin-bottom: 10px;
 }
 .how-box {
-  text-align: left; font-size: 12.5px; line-height: 1.55; background: rgba(8, 11, 20, 0.72);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 12px 14px; margin-bottom: 14px;
+  text-align: left; font-size: 12px; line-height: 1.5; background: rgba(8, 6, 18, 0.82);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
   color: #cbd5e1;
 }
-.how-box li { list-style: none; padding-left: 1.2em; position: relative; margin-bottom: 4px; }
+.how-box li { list-style: none; padding-left: 1.2em; position: relative; margin-bottom: 3px; }
+.how-box li:last-child { margin-bottom: 0; }
 .how-box li::before {
   content: "✦"; position: absolute; left: 0; color: var(--accent); font-weight: 900;
 }
 .how-box b { color: #fff; font-weight: 900; }
 
 .best-strip {
-  display: flex; justify-content: space-around; gap: 6px; margin-bottom: 14px;
-  background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 10px; font-size: 11.5px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 12px;
+  background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px 4px; font-size: 10.5px; color: #cbd5e1;
 }
-.best-strip b { display: block; font-family: var(--font-round); font-size: 15px; color: #fde047; }
+.best-strip b { display: block; font-family: var(--font-round); font-size: 13px; color: #fde047; margin-top: 2px; }
 
 .btn-start {
-  width: 100%; padding: 14px 18px; border-radius: 16px; border: none;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  width: 100%; padding: 13px 18px; border-radius: 15px; border: none;
+  background: linear-gradient(135deg, #f43f5e, #a855f7 52%, #06b6d4);
   color: #fff; font-family: var(--font-round); font-size: 17px; font-weight: 900;
-  cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.45); outline: none;
+  cursor: pointer; box-shadow: 0 6px 20px rgba(244,63,94,0.45); outline: none;
+  touch-action: manipulation;
 }
 .btn-start:active { transform: scale(0.97); }
-.plan-note {
-  margin-top: 10px; font-size: 11px; color: var(--text-dim); line-height: 1.45;
+
+/* リザルト数値グリッド */
+.res-score-box {
+  background: linear-gradient(135deg, rgba(136,19,55,0.45), rgba(15,23,42,0.9));
+  border: 1.5px solid rgba(244,63,94,0.5); border-radius: 16px;
+  padding: 12px 10px; margin: 10px 0;
+}
+.res-score-lbl { font-size: 11px; color: #cbd5e1; font-weight: 800; letter-spacing: 1px; }
+.res-score-val {
+  font-family: var(--font-round); font-size: 32px; font-weight: 900; color: #fde047;
+  line-height: 1.15; text-shadow: 0 3px 12px rgba(250,204,21,0.35);
+}
+.new-rec-badge {
+  display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px;
+  background: linear-gradient(90deg, #f43f5e, #f59e0b); color: #fff;
+  font-family: var(--font-round); font-size: 11px; font-weight: 900;
+  animation: pulseBadge 1s ease-in-out infinite alternate;
+}
+@keyframes pulseBadge { from { transform: scale(0.96); } to { transform: scale(1.06); } }
+
+.res-stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px;
+}
+.res-stat-card {
+  background: rgba(10, 10, 24, 0.85); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 8px 4px; font-size: 11px; color: #94a3b8;
+}
+.res-stat-card b {
+  display: block; font-family: var(--font-round); font-size: 14px; color: #f8fafc; margin-top: 2px;
 }
 
 /* モーダル共通（アカウント・ランキング・端末チェック） */
 #auth-modal, #rank-modal, #gate-modal {
   position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
-  background: rgba(6, 8, 16, 0.85); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  background: rgba(6, 5, 16, 0.86); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: calc(var(--sat) + 16px) 16px calc(var(--sab) + 16px); overflow-y: auto; touch-action: pan-y;
 }
 .hidden { display: none !important; }
 .modal-card {
-  width: min(92vw, 380px); margin: auto; background: #151928;
+  width: min(92vw, 380px); margin: auto; background: #151226;
   border: 1.5px solid var(--accent); border-radius: 22px;
-  padding: 22px 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.8); text-align: center; color: #f8fafc;
+  padding: 20px 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.85); text-align: center; color: #f8fafc;
 }
-.modal-logo { width: 60px; height: 60px; border-radius: 15px; margin: 0 auto 8px; display: block; }
+.modal-logo { width: 58px; height: 58px; border-radius: 15px; margin: 0 auto 8px; display: block; }
 .modal-card h2 { font-family: var(--font-round); font-size: 20px; font-weight: 900; margin-bottom: 4px; }
 .modal-card h3 { font-size: 15px; font-weight: 800; color: #fde047; margin-bottom: 8px; }
 .modal-card p.muted { font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 6px 0 12px; text-align: left; }
 .tabs2 { display: flex; gap: 8px; margin: 12px 0; }
 .tabs2 button {
   flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid rgba(148,163,184,0.3);
-  background: rgba(10,12,20,0.8); color: #94a3b8; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  background: rgba(10,12,20,0.85); color: #94a3b8; font-size: 13.5px; font-weight: 800; cursor: pointer;
 }
-.tabs2 button.on { border-color: var(--accent); color: #fff; background: rgba(255,255,255,0.12); }
+.tabs2 button.on { border-color: var(--accent); color: #fff; background: rgba(244,63,94,0.2); }
 .m-input {
-  width: 100%; padding: 12px 14px; border: 1.5px solid rgba(148,163,184,0.28);
-  border-radius: 10px; font-size: 15px; background: #0b0e17; color: #f8fafc; margin-bottom: 8px; outline: none;
+  width: 100%; padding: 11px 14px; border: 1.5px solid rgba(148,163,184,0.28);
+  border-radius: 10px; font-size: 15px; background: #090814; color: #f8fafc; margin-bottom: 8px; outline: none;
 }
 .m-input:focus { border-color: var(--accent); }
 .m-btn {
-  width: 100%; min-height: 44px; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid rgba(148,163,184,0.3); background: rgba(30,36,54,0.92); color: #e2e8f0;
-  font-size: 14px; font-weight: 800; margin-top: 8px; cursor: pointer; outline: none;
+  width: 100%; min-height: 44px; padding: 10px 14px; border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.3); background: rgba(28,24,52,0.92); color: #e2e8f0;
+  font-family: var(--font-round); font-size: 14px; font-weight: 800; margin-top: 8px; cursor: pointer; outline: none;
+  touch-action: manipulation;
 }
-.m-btn.pri { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; }
+.m-btn:active { transform: scale(0.98); }
+.m-btn.pri { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border: none; font-weight: 900; }
 .m-btn.danger { background: #7f1d1d; border-color: #f87171; color: #fecaca; }
 .m-btn.sub { background: transparent; color: #cbd5e1; }
 
 .rank-box { max-height: 270px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; display: flex; flex-direction: column; gap: 6px; }
-.rank-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(10,12,20,0.75); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
-.rank-row.me { border-color: var(--accent); background: rgba(255,255,255,0.12); }
+.rank-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgba(10,8,22,0.82); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
+.rank-row.me { border-color: var(--accent); background: rgba(244,63,94,0.16); }
 .rank-pos { width: 30px; font-weight: 900; color: #fde047; text-align: left; }
 .rank-name { flex: 1; text-align: left; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank-score { font-family: var(--font-round); font-weight: 900; color: var(--accent2); margin-left: 8px; }
-.rank-sub { font-size: 10.5px; color: #94a3b8; margin-left: 6px; min-width: 44px; text-align: right; }
+.rank-sub { font-size: 10.5px; color: #94a3b8; margin-left: 6px; min-width: 56px; text-align: right; }
 
 #rotate-notice {
-  position: fixed; inset: 0; z-index: 300; background: #0b0e17; color: #fff;
+  position: fixed; inset: 0; z-index: 300; background: #090514; color: #fff;
   display: none; align-items: center; justify-content: center; flex-direction: column; gap: 10px; font-weight: 900;
 }
 @media (orientation: landscape) and (max-height: 520px) {
   #rotate-notice { display: flex; }
 }
 #toast {
-  position: fixed; top: calc(var(--sat) + 18px); left: 50%; transform: translateX(-50%); z-index: 250;
-  background: rgba(15,18,28,0.95); border: 1.5px solid var(--accent); padding: 9px 18px; border-radius: 999px;
-  color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  position: fixed; top: calc(var(--sat) + 14px); left: 50%; transform: translateX(-50%); z-index: 250;
+  background: rgba(15,12,28,0.96); border: 1.5px solid var(--accent); padding: 8px 16px; border-radius: 999px;
+  color: #fff; font-size: 12.5px; font-weight: 800; box-shadow: 0 8px 24px rgba(0,0,0,0.65);
   opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap;
 }
 #toast.show { opacity: 1; }
@@ -168,7 +244,29 @@ html, body {
 <body>
 <div id="rotate-notice">📱 縦向きにしてお楽しみください</div>
 
+<!-- iOS 18+ ハプティクス用隠しスイッチ -->
+<label id="haptic-label" style="position:fixed;left:-9999px;top:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+  <input type="checkbox" switch id="haptic-input">
+</label>
+
 <div id="app">
+  <div id="stage-wrap">
+    <canvas id="game-canvas" width="400" height="780"></canvas>
+
+    <!-- 上部 HUD 操作ボタン領域（論理 400×780 に対応） -->
+    <button id="pause-btn" class="hud-hit-btn" style="left:2.5%;top:1%;width:10%;height:6.5%;" aria-label="一時停止" title="一時停止"></button>
+    <button id="snd-btn" class="hud-hit-btn" style="left:13%;top:1%;width:9.5%;height:6.5%;" aria-label="サウンド切替" title="サウンド切替"></button>
+    <button id="hud-rank-btn" class="hud-hit-btn" style="left:23%;top:1%;width:9.5%;height:6.5%;" aria-label="ランキング" title="ランキング"></button>
+
+    <!-- 下部 魔導アクティブスキルボタン領域（論理 400×780 に対応） -->
+    <button id="skill-smash" class="hud-hit-btn" style="left:3.5%;top:88%;width:29.5%;height:10%;" aria-label="貫通スマッシュ SMASH (MP30)"></button>
+    <button id="skill-multi" class="hud-hit-btn" style="left:35.2%;top:88%;width:29.5%;height:10%;" aria-label="×2分裂ノヴァ MULTIBALL (MP45)"></button>
+    <button id="skill-overdrive" class="hud-hit-btn" style="left:67%;top:88%;width:29.5%;height:10%;" aria-label="覚醒解放 OVERDRIVE (MP65)"></button>
+  </div>
+</div>
+
+<!-- タイトル画面オーバーレイ -->
+<div class="screen-overlay" id="title-overlay">
   <div class="top-bar">
     <button id="me-btn" class="bar-btn">👤 <span id="user-display">ログイン</span></button>
     <button id="rank-btn" class="bar-btn pri">🏆 ランキング</button>
@@ -177,21 +275,58 @@ html, body {
   <div class="center-card" id="title-card">
     <img src="icons/icon.svg" class="hero-icon" alt="icon">
     <span class="genre-badge">ボール100個増殖×スマッシュブロック崩し</span>
-    <h1 class="game-title">ブレイクアウト・オデッセイ：魔導ブロック崩し</h1>
+    <h1 class="game-title">ブレイクアウト・オデッセイ<br>魔導ブロック崩し</h1>
     <div class="game-en">BREAKOUT ODYSSEY</div>
     <div class="tagline">1球が100球に増殖！ボスブロックを粉砕する超インフレ崩し！</div>
     <ul class="how-box">
-      <li>左右ドラッグで<b>魔導パドル</b>を移動してボールを跳ね返す！</li>
-      <li>パドルに当たる瞬間に<b>上フリック</b>すると、超高速の<b>⚡貫通スマッシュ</b>発動！</li>
-      <li>落ちてくる<b>×2・×3カプセル</b>を取ると、盤面の全ボールが一気に分裂増殖！</li>
-      <li>ステージ最上部の<b>巨大ボスコア</b>を破壊すると全ブロック一斉誘爆でSTAGE CLEAR！</li>
+      <li>左右ドラッグで<b>魔導パドル</b>を移動して光球を跳ね返す！</li>
+      <li>当たる瞬間に<b>上フリック／タップ</b>で超高速の<b>⚡貫通スマッシュ</b>発動！</li>
+      <li>落ちてくる<b>×2分裂・+3球・🔥貫通・⚡レーザー・🛡️守護壁</b>で最大120球増殖！</li>
+      <li>最上部の<b>巨大ボスコア</b>を破壊すると<b>全ブロック一斉誘爆</b>でSTAGE CLEAR！</li>
     </ul>
     <div class="best-strip">
       <div>最高スコア<b id="best-main">0 pts</b></div>
       <div>到達STAGE<b id="best-sub">1 ST</b></div>
+      <div>最大同時球<b id="best-balls">1 個</b></div>
+      <div>最大COMBO<b id="best-combo">0 HIT</b></div>
     </div>
-    <button class="btn-start" id="start-btn">🚀 ゲーム開始（企画プレビュー）</button>
-    <p class="plan-note">※共通アカウント・D1記録API・自動デプロイ基盤セットアップ済み。<br>詳細は <code>PLAN.md</code> / <code>CLAUDE.md</code> を参照してください。</p>
+    <button class="btn-start" id="start-btn">🚀 ゲーム開始</button>
+  </div>
+</div>
+
+<!-- 一時停止モーダル -->
+<div class="screen-overlay hidden" id="pause-modal">
+  <div class="center-card">
+    <span class="genre-badge">PAUSED</span>
+    <h2 class="game-title" style="margin-bottom:4px;">一時停止中</h2>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">魔導ブロック崩しを中断しています</p>
+    <button class="m-btn pri" id="resume-btn">▶️ ゲームを再開</button>
+    <button class="m-btn" id="retry-btn">🔄 はじめからやり直す</button>
+    <button class="m-btn" id="pause-rank-btn">🏆 ランキングを見る</button>
+    <button class="m-btn" id="pause-acct-btn">👤 アカウント設定</button>
+    <button class="m-btn sub" id="title-btn">🏠 タイトルへ戻る</button>
+  </div>
+</div>
+
+<!-- リザルト（ゲームオーバー）モーダル -->
+<div class="screen-overlay hidden" id="result-modal">
+  <div class="center-card">
+    <span class="genre-badge" id="res-badge">ODYSSEY RESULT</span>
+    <h2 class="game-title" id="res-title">魔導戦線 終了！</h2>
+    <div class="res-score-box">
+      <div class="res-score-lbl">FINAL SCORE</div>
+      <div class="res-score-val" id="res-score">0 pts</div>
+      <div id="res-new-record" class="new-rec-badge hidden">✨ NEW RECORD! ✨</div>
+    </div>
+    <div class="res-stats-grid">
+      <div class="res-stat-card">到達STAGE<b id="res-stage">1 ST</b></div>
+      <div class="res-stat-card">最大同時ボール<b id="res-balls">1 個</b></div>
+      <div class="res-stat-card">最大破壊COMBO<b id="res-combo">0 HIT</b></div>
+    </div>
+    <div id="res-boss-info" style="font-size:12px;color:#fde047;font-weight:800;margin-bottom:10px;">撃破ボスコア：0 体</div>
+    <button class="btn-start" id="result-retry-btn">🔄 もう一度遊ぶ</button>
+    <button class="m-btn" id="result-rank-btn" style="margin-top:8px;">🏆 ランキングを見る</button>
+    <button class="m-btn sub" id="result-title-btn">🏠 タイトルへ戻る</button>
   </div>
 </div>
 
@@ -228,10 +363,20 @@ html, body {
 (() => {
   'use strict';
 
+  /* ================= エラー監視（バグ検証用） ================= */
+  const errorLog = [];
+  window.addEventListener('error', (e) => {
+    errorLog.push(String(e.message || e));
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    errorLog.push(String(e.reason || e));
+  });
+
   /* ================= 共通アカウント・クラウド同期・端末チェック ================= */
   const API_BASE = '';
   const LS_ACCT_KEY = 'bb_account_v1';
   const LS_REC_KEY = 'bb_record_v1';
+  const LS_SND_KEY = 'bb_sound_v1';
   const GATE_KEY = 'bb_gate_ok_v1';
   const PBKDF2_ITER = 600000;
   const KEY_SALT_PREFIX = 'minicity-v1:';
@@ -247,6 +392,8 @@ html, body {
 
   let acct = { token: '', name: '' };
   let localRec = { best_score: 0, best_stage: 1, best_balls: 1, best_combo: 0 };
+  let lastCloudPostAt = 0;
+
   try {
     const a = JSON.parse(localStorage.getItem(LS_ACCT_KEY) || 'null');
     if (a && typeof a.token === 'string') acct = Object.assign(acct, a);
@@ -266,33 +413,270 @@ html, body {
     t._tm = setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  /* ================= WebAudio 音の解錠 & iOS 18+ 触覚フィードバック ================= */
-  const Snd = {
-    ctx: null,
-    unlock() {
-      if (!this.ctx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        this.ctx = new AC();
-      }
-      if (this.ctx.state === 'suspended') this.ctx.resume();
-    },
-    beep(freq = 660, dur = 0.08) {
-      if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      const o = this.ctx.createOscillator();
-      const g = this.ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.setValueAtTime(freq, t);
-      g.gain.setValueAtTime(0.18, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      o.connect(g); g.connect(this.ctx.destination);
-      o.start(t); o.stop(t + dur + 0.02);
+  /* ================= iOS 18+ 触覚フィードバック ================= */
+  const Haptics = {
+    lastAt: 0,
+    pulse() {
+      const now = performance.now();
+      if (now - this.lastAt < 60) return;
+      this.lastAt = now;
+      try {
+        if (navigator.vibrate) navigator.vibrate(12);
+        const lbl = $('haptic-label');
+        if (lbl) lbl.click();
+      } catch (e) {}
     }
   };
+
+  /* ================= WebAudio プロシージャルBGM & 効果音 ================= */
+  const SCALE_FREQS = [
+    261.63, 293.66, 329.63, 392.00, 440.00,
+    523.25, 587.33, 659.25, 783.99, 880.00,
+    1046.50, 1174.66, 1318.51, 1567.98
+  ];
+
+  const Snd = {
+    ctx: null,
+    on: true,
+    bgmTimer: null,
+    bgmStep: 0,
+    noiseBuf: null,
+    lastBrickSndAt: 0,
+    lastPaddleSndAt: 0,
+
+    init() {
+      try {
+        const saved = localStorage.getItem(LS_SND_KEY);
+        if (saved === '0') this.on = false;
+      } catch (e) {}
+    },
+
+    unlock() {
+      try {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          this.ctx = new AC();
+          const sr = this.ctx.sampleRate;
+          const buf = this.ctx.createBuffer(1, sr * 1.2, sr);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+          this.noiseBuf = buf;
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      } catch (e) {}
+    },
+
+    toggle() {
+      this.on = !this.on;
+      try { localStorage.setItem(LS_SND_KEY, this.on ? '1' : '0'); } catch (e) {}
+      if (this.on) {
+        this.unlock();
+        this.beep(660, 0.08);
+        if (G && G.mode === 'playing') this.startBgm();
+      } else {
+        this.stopBgm();
+      }
+      toast(this.on ? '🔊 サウンド ON' : '🔇 サウンド OFF');
+    },
+
+    beep(freq = 660, dur = 0.08) {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) {}
+    },
+
+    paddleHit(isSmash) {
+      if (!this.on || !this.ctx) return;
+      const now = performance.now();
+      if (now - this.lastPaddleSndAt < 35) return;
+      this.lastPaddleSndAt = now;
+      try {
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        if (isSmash) {
+          o.type = 'sawtooth';
+          o.frequency.setValueAtTime(320, t);
+          o.frequency.exponentialRampToValueAtTime(980, t + 0.14);
+          g.gain.setValueAtTime(0.2, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(t); o.stop(t + 0.17);
+        } else {
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(280, t);
+          o.frequency.exponentialRampToValueAtTime(420, t + 0.06);
+          g.gain.setValueAtTime(0.14, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(t); o.stop(t + 0.08);
+        }
+      } catch (e) {}
+    },
+
+    brickHit(combo, broken) {
+      if (!this.on || !this.ctx) return;
+      const now = performance.now();
+      if (now - this.lastBrickSndAt < 38) return;
+      this.lastBrickSndAt = now;
+      try {
+        const t = this.ctx.currentTime;
+        const idx = Math.min(SCALE_FREQS.length - 1, Math.max(0, combo % SCALE_FREQS.length));
+        const freq = SCALE_FREQS[idx] * (broken ? 1.0 : 0.75);
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = broken ? 'sine' : 'triangle';
+        o.frequency.setValueAtTime(freq, t);
+        if (broken) o.frequency.exponentialRampToValueAtTime(freq * 1.35, t + 0.08);
+        g.gain.setValueAtTime(broken ? 0.14 : 0.09, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + (broken ? 0.09 : 0.05));
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + 0.1);
+      } catch (e) {}
+    },
+
+    capsuleGet() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+          const st = t + i * 0.04;
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(f, st);
+          g.gain.setValueAtTime(0.12, st);
+          g.gain.exponentialRampToValueAtTime(0.001, st + 0.14);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(st); o.stop(st + 0.15);
+        });
+      } catch (e) {}
+    },
+
+    bossExplode() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        if (this.noiseBuf) {
+          const src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuf;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(900, t);
+          filter.frequency.exponentialRampToValueAtTime(140, t + 0.75);
+          const g = this.ctx.createGain();
+          g.gain.setValueAtTime(0.28, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+          src.connect(filter); filter.connect(g); g.connect(this.ctx.destination);
+          src.start(t); src.stop(t + 0.82);
+        }
+        [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+          const st = t + i * 0.055;
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(f, st);
+          g.gain.setValueAtTime(0.15, st);
+          g.gain.exponentialRampToValueAtTime(0.001, st + 0.35);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(st); o.stop(st + 0.36);
+        });
+      } catch (e) {}
+    },
+
+    damage() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(220, t);
+        o.frequency.exponentialRampToValueAtTime(75, t + 0.25);
+        g.gain.setValueAtTime(0.2, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.27);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(t); o.stop(t + 0.28);
+      } catch (e) {}
+    },
+
+    gameOver() {
+      if (!this.on || !this.ctx) return;
+      try {
+        const t = this.ctx.currentTime;
+        [392.00, 349.23, 329.63, 261.63].forEach((f, i) => {
+          const st = t + i * 0.14;
+          const o = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(f, st);
+          g.gain.setValueAtTime(0.15, st);
+          g.gain.exponentialRampToValueAtTime(0.001, st + 0.3);
+          o.connect(g); g.connect(this.ctx.destination);
+          o.start(st); o.stop(st + 0.32);
+        });
+      } catch (e) {}
+    },
+
+    startBgm() {
+      this.stopBgm();
+      if (!this.on) return;
+      const bassNotes = [130.81, 130.81, 155.56, 174.61, 146.83, 146.83, 196.00, 174.61];
+      const arpNotes = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.00, 698.46];
+      this.bgmTimer = setInterval(() => {
+        if (!this.on || !this.ctx || !G || G.mode !== 'playing') return;
+        if (this.ctx.state !== 'running') return;
+        try {
+          const t = this.ctx.currentTime;
+          const step = this.bgmStep++;
+          const bFreq = bassNotes[step % bassNotes.length];
+          const aFreq = arpNotes[step % arpNotes.length];
+
+          const bo = this.ctx.createOscillator();
+          const bg = this.ctx.createGain();
+          bo.type = 'triangle';
+          bo.frequency.setValueAtTime(bFreq, t);
+          bg.gain.setValueAtTime(0.045, t);
+          bg.gain.exponentialRampToValueAtTime(0.0008, t + 0.16);
+          bo.connect(bg); bg.connect(this.ctx.destination);
+          bo.start(t); bo.stop(t + 0.17);
+
+          if (step % 2 === 0 || (G && G.balls && G.balls.length >= 20)) {
+            const ao = this.ctx.createOscillator();
+            const ag = this.ctx.createGain();
+            ao.type = 'sine';
+            ao.frequency.setValueAtTime(aFreq, t);
+            ag.gain.setValueAtTime(0.025, t);
+            ag.gain.exponentialRampToValueAtTime(0.0008, t + 0.11);
+            ao.connect(ag); ag.connect(this.ctx.destination);
+            ao.start(t); ao.stop(t + 0.12);
+          }
+        } catch (e) {}
+      }, 190);
+    },
+
+    stopBgm() {
+      if (this.bgmTimer) {
+        clearInterval(this.bgmTimer);
+        this.bgmTimer = null;
+      }
+    }
+  };
+  Snd.init();
   window.addEventListener('pointerup', () => Snd.unlock(), { passive: true });
   window.addEventListener('touchend', () => Snd.unlock(), { passive: true });
 
+  /* ================= 認証・クラウド通信 ================= */
   async function deriveKey(name, password) {
     if (!(window.crypto && crypto.subtle)) {
       throw { message: 'この環境では暗号機能が使えません。https:// または localhost で開いてください' };
@@ -343,6 +727,8 @@ html, body {
     $('user-display').textContent = acct.name || 'ログイン';
     $('best-main').textContent = Number(localRec.best_score || 0).toLocaleString() + ' pts';
     $('best-sub').textContent = Number(localRec.best_stage || 1).toLocaleString() + ' ST';
+    if ($('best-balls')) $('best-balls').textContent = Number(localRec.best_balls || 1).toLocaleString() + ' 個';
+    if ($('best-combo')) $('best-combo').textContent = Number(localRec.best_combo || 0).toLocaleString() + ' HIT';
   }
 
   async function loadCloudRecords() {
@@ -352,12 +738,40 @@ html, body {
       if (r && r.record) {
         localRec.best_score = Math.max(localRec.best_score || 0, r.record.best_score || 0);
         localRec.best_stage = Math.max(localRec.best_stage || 1, r.record.best_stage || 1);
-        localRec.best_balls = Math.max(localRec.best_balls || 0, r.record.best_balls || 0);
+        localRec.best_balls = Math.max(localRec.best_balls || 1, r.record.best_balls || 1);
         localRec.best_combo = Math.max(localRec.best_combo || 0, r.record.best_combo || 0);
         saveLocalRec();
         updateUI();
       }
     } catch (e) {}
+  }
+
+  async function submitCloudRecord(rawScore, rawStage, rawBalls, rawCombo) {
+    const score = Math.max(0, Math.min(99999999, Math.floor(Number(rawScore) || 0)));
+    const stage = Math.max(1, Math.min(999, Math.floor(Number(rawStage) || 1)));
+    const balls = Math.max(1, Math.min(999, Math.floor(Number(rawBalls) || 1)));
+    const combo = Math.max(0, Math.min(99999, Math.floor(Number(rawCombo) || 0)));
+
+    localRec.best_score = Math.max(localRec.best_score || 0, score);
+    localRec.best_stage = Math.max(localRec.best_stage || 1, stage);
+    localRec.best_balls = Math.max(localRec.best_balls || 1, balls);
+    localRec.best_combo = Math.max(localRec.best_combo || 0, combo);
+    saveLocalRec();
+    updateUI();
+
+    if (!acct.token) return { ok: false, reason: 'no_token', payload: { score, stage, balls, combo } };
+    const now = Date.now();
+    const waitMs = Math.max(0, 3100 - (now - lastCloudPostAt));
+    if (waitMs > 0) {
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+    try {
+      lastCloudPostAt = Date.now();
+      const res = await api('POST', '/api/records', { score, stage, balls, combo }, { keepalive: true });
+      return { ok: true, res, payload: { score, stage, balls, combo } };
+    } catch (e) {
+      return { ok: false, error: e, payload: { score, stage, balls, combo } };
+    }
   }
 
   function showAuthModal(html) {
@@ -372,7 +786,7 @@ html, body {
     const reg = mode === 'register';
     showAuthModal(`
       <img src="icons/icon.svg" class="modal-logo" alt="logo">
-      <h2>ブレイクアウト・オデッセイ：魔導ブロック崩し</h2>
+      <h2>ブレイクアウト・オデッセイ</h2>
       <p style="font-size:12px;color:#fde047;margin-bottom:6px">たかGames 全ゲーム共通アカウント</p>
       <div class="tabs2">
         <button id="tab-login" class="${reg ? '' : 'on'}">ログイン</button>
@@ -383,9 +797,9 @@ html, body {
       ${reg ? '<input id="in-pass2" class="m-input" type="password" placeholder="パスワード（確認用）" autocomplete="new-password" maxlength="128">' : ''}
       ${reg ? '<input id="in-invite" class="m-input" placeholder="招待コード" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="64">' : ''}
       <p class="muted" id="auth-msg" style="color:#ff9a90;min-height:16px">${msg ? esc(msg) : ''}</p>
-      <p class="muted">※たかGamesポータルや他のゲーム（SUGAR STACK、DEAD BRIDGE、ルーンの砦、ゆびさきパニック等）と同じアカウントでログインできます。</p>
+      <p class="muted">※たかGamesポータルや他のゲーム（アビス・ハンター、アルケミスト、SUGAR STACK、DEAD BRIDGE等）と同じアカウントでログインできます。</p>
       <button class="m-btn pri" id="auth-submit">${reg ? '登録してはじめる' : 'ログイン'}</button>
-      ${acct.token ? '<button class="m-btn sub" id="auth-cancel">閉じる</button>' : ''}
+      <button class="m-btn sub" id="auth-cancel">ゲストのまま閉じる</button>
     `);
     $('tab-login').onclick = () => showAuth('login', '', $('in-name')?.value);
     $('tab-reg').onclick = () => showAuth('register', '', $('in-name')?.value);
@@ -521,15 +935,15 @@ html, body {
             <div class="rank-pos">#${idx + 1}</div>
             <div class="rank-name">${esc(row.name)}${row.me ? ' (あなた)' : ''}</div>
             <div class="rank-score">${Number(row.bestScore).toLocaleString()} pts</div>
-            <div class="rank-sub">${row.subStat} ST</div>
+            <div class="rank-sub">${row.subStat}ST / ${row.comboStat || 1}球</div>
           </div>
         `).join('');
       }
       if (r && r.me && r.me.rank) {
-        myEl.textContent = `あなたの順位: #${r.me.rank} （${Number(r.me.bestScore).toLocaleString()} pts）`;
+        myEl.textContent = `あなたの順位: #${r.me.rank} （${Number(r.me.bestScore).toLocaleString()} pts / ${r.me.subStat} ST）`;
       }
     } catch (e) {
-      listEl.innerHTML = '<div style="color:#f87171;font-size:12px;padding:16px 0;">ランキング取得に失敗しました</div>';
+      listEl.innerHTML = '<div style="color:#f87171;font-size:12px;padding:16px 0;">ランキング取得に失敗しました（ログインすると表示されます）</div>';
     }
   }
 
@@ -547,26 +961,1863 @@ html, body {
     return !deviceOk();
   }
 
+  /* ============================================================================
+   *  ゲーム本編：ブレイクアウト・オデッセイ：魔導ブロック崩し (BREAKOUT ODYSSEY)
+   * ============================================================================ */
+  const canvas = $('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const LW = 400;
+  const LH = 780;
+
+  const FIELD = {
+    left: 14,
+    right: 386,
+    top: 64,
+    bottom: 672,
+    width: 372,
+    height: 608,
+    cx: 200
+  };
+  const PADDLE_Y = 636;
+  const GUARD_Y = 660;
+  const MAX_BALLS = 120;
+  const MAX_PARTICLES = 160;
+  const MAX_FLOATS = 24;
+
+  // ボスコア定義（ステージごとに進化）
+  const BOSS_DEFS = [
+    { name: '魔導クリスタル核', color: '#22d3ee', coreColor: '#f43f5e', baseHp: 555, speed: 36, fireInterval: 7.4, spread: 1 },
+    { name: 'ルーンガーディアン核', color: '#a855f7', coreColor: '#fde047', baseHp: 690, speed: 54, fireInterval: 4.8, spread: 2 },
+    { name: '紅蓮イフリート核', color: '#f97316', coreColor: '#fef08a', baseHp: 820, speed: 72, fireInterval: 3.3, spread: 3 },
+    { name: '深淵リヴァイアサン核', color: '#38bdf8', coreColor: '#f43f5e', baseHp: 960, speed: 88, fireInterval: 2.35, spread: 3 },
+    { name: '星喰いウロボロス核', color: '#ec4899', coreColor: '#22d3ee', baseHp: 1120, speed: 104, fireInterval: 1.8, spread: 4 },
+    { name: '次元神オデッセイ核 Ω', color: '#fde047', coreColor: '#f43f5e', baseHp: 1280, speed: 118, fireInterval: 1.45, spread: 5 }
+  ];
+
+  // カプセル定義（5種類）
+  const CAPSULE_TYPES = {
+    multi2:   { key: 'multi2',   label: '×2分裂',   icon: '×2', color: '#22d3ee', border: '#a5f3fc' },
+    shot3:    { key: 'shot3',    label: '+3球射出', icon: '+3', color: '#4ade80', border: '#bbf7d0' },
+    fireball: { key: 'fireball', label: '🔥貫通弾', icon: '🔥', color: '#fb923c', border: '#fed7aa' },
+    laser:    { key: 'laser',    label: '⚡連射砲', icon: '⚡', color: '#fde047', border: '#fef9c3' },
+    guard:    { key: 'guard',    label: '🛡️守護壁', icon: '🛡️', color: '#c084fc', border: '#e9d5ff' }
+  };
+
+  // ブロックカラーパレット
+  const BRICK_COLORS = [
+    '#f43f5e', // ローズ
+    '#fb923c', // オレンジ
+    '#facc15', // ゴールド
+    '#4ade80', // エメラルド
+    '#22d3ee', // シアン
+    '#a855f7'  // パープル
+  ];
+
+  function createRng(seed) {
+    let s = (Number(seed) || 123456789) >>> 0;
+    if (s === 0) s = 987654321;
+    return function rng() {
+      s ^= s << 13;
+      s ^= s >>> 17;
+      s ^= s << 5;
+      return ((s >>> 0) % 1000000) / 1000000;
+    };
+  }
+
+  function clampPaddleX(x, halfW) {
+    if (!Number.isFinite(x)) return FIELD.cx;
+    return Math.max(FIELD.left + halfW, Math.min(FIELD.right - halfW, x));
+  }
+
+  // ボールの最小垂直速度（|vy| >= vmin）保証関数（水平ループバグ完全防止）
+  function normalizeBallVelocity(b, targetSpd) {
+    let spd = targetSpd || Math.hypot(b.vx, b.vy);
+    if (!Number.isFinite(spd) || spd < 220) spd = 330;
+    spd = Math.min(680, Math.max(260, spd));
+
+    let vx = Number.isFinite(b.vx) ? b.vx : 120;
+    let vy = Number.isFinite(b.vy) ? b.vy : -300;
+    const minVy = spd * 0.36; // 最低36%の垂直速度を強制
+
+    if (Math.abs(vy) < minVy) {
+      const signY = vy >= 0 ? 1 : -1;
+      vy = signY * minVy;
+      const rem = Math.sqrt(Math.max(0, spd * spd - vy * vy));
+      vx = (vx >= 0 ? 1 : -1) * rem;
+    } else {
+      const len = Math.hypot(vx, vy) || 1;
+      vx = (vx / len) * spd;
+      vy = (vy / len) * spd;
+    }
+    b.vx = vx;
+    b.vy = vy;
+  }
+
+  function baseBallSpeed(stage) {
+    return Math.min(480, 320 + (stage - 1) * 18);
+  }
+
+  function createBall(x, y, vx, vy, smash = false) {
+    const b = {
+      x: Number.isFinite(x) ? x : FIELD.cx,
+      y: Number.isFinite(y) ? y : PADDLE_Y - 14,
+      vx: Number.isFinite(vx) ? vx : 130,
+      vy: Number.isFinite(vy) ? vy : -310,
+      r: 5.5,
+      smash: !!smash
+    };
+    normalizeBallVelocity(b, Math.hypot(b.vx, b.vy));
+    return b;
+  }
+
+  function buildStage(st, stageNum) {
+    st.stage = stageNum;
+    st.stageTime = 0;
+    st.stageClearTimer = 0;
+    st.bricks = [];
+    st.capsules = [];
+    st.lasers = [];
+    st.hazards = [];
+
+    const bDef = BOSS_DEFS[Math.min(BOSS_DEFS.length - 1, stageNum - 1)];
+    const hpScale = stageNum > BOSS_DEFS.length ? 1 + (stageNum - BOSS_DEFS.length) * 0.22 : 1;
+    const bossMaxHp = Math.round(bDef.baseHp * hpScale);
+
+    st.boss = {
+      name: bDef.name,
+      color: bDef.color,
+      coreColor: bDef.coreColor,
+      x: FIELD.cx,
+      y: 100,
+      w: 132,
+      h: 48,
+      vx: bDef.speed,
+      hp: bossMaxHp,
+      maxHp: bossMaxHp,
+      barrierActive: true,
+      hitFlash: 0,
+      hitCd: 0,
+      fireTimer: stageNum === 1 ? 17.5 : Math.max(2.2, bDef.fireInterval * 0.85),
+      fireInterval: bDef.fireInterval,
+      spread: bDef.spread
+    };
+
+    // ブロック生成（9列 × 6〜7行）
+    const cols = 9;
+    const rows = Math.min(7, 6 + Math.floor((stageNum - 1) / 2));
+    const bw = 37;
+    const bh = 18;
+    const gapX = 3.5;
+    const gapY = 4;
+    const totalW = cols * bw + (cols - 1) * gapX;
+    const startX = FIELD.cx - totalW * 0.5 + bw * 0.5;
+    const startY = 152;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const bx = startX + c * (bw + gapX);
+        const by = startY + r * (bh + gapY);
+
+        // 1ステージ45〜90秒で爽快に崩せる耐久値設計
+        const baseHp = Math.max(2, Math.round(3 + (rows - 1 - r) * 1.4 + (stageNum - 1) * 1.5));
+        let type = 'normal';
+        const roll = st.rng();
+        if (r === rows - 1 && (c === 3 || c === 5)) {
+          type = 'capsule';
+        } else if ((r === 2 || r === 4) && (c === 2 || c === 6)) {
+          type = 'bomb';
+        } else if (roll < 0.22) {
+          type = 'capsule';
+        } else if (roll < 0.32) {
+          type = 'crystal';
+        }
+
+        const color = BRICK_COLORS[(r + c + stageNum) % BRICK_COLORS.length];
+        const hp = (r === rows - 1 && type === 'capsule') ? 1 : (type === 'bomb' ? Math.max(2, baseHp - 1) : baseHp);
+        st.bricks.push({
+          x: bx,
+          y: by,
+          w: bw,
+          h: bh,
+          hp,
+          maxHp: hp,
+          type,
+          color,
+          hitFlash: 0,
+          hitCd: 0
+        });
+      }
+    }
+    st.initialBrickCount = st.bricks.length;
+
+    // ステージ開始時のボール整備（1球からスタートし、カプセル＆スキルで100球超へインフレ！）
+    const spd = baseBallSpeed(stageNum);
+    if (st.balls.length === 0) {
+      st.balls.push(createBall(st.paddle.x, PADDLE_Y - 16, spd * 0.28, -spd * 0.96, false));
+    } else {
+      if (st.balls.length > 5) st.balls.length = 5;
+      for (let i = 0; i < st.balls.length; i++) {
+        const b = st.balls[i];
+        const ang = -Math.PI * 0.5 + ((i % 5) - 2) * 0.16;
+        b.x = clampPaddleX(st.paddle.x + ((i % 5) - 2) * 8, 20);
+        b.y = PADDLE_Y - 18 - (i % 3) * 6;
+        b.vx = Math.cos(ang) * spd;
+        b.vy = Math.sin(ang) * spd;
+        b.smash = i === 0;
+        normalizeBallVelocity(b, spd);
+      }
+    }
+
+    // ステージ1開幕は14秒間の守護壁を展開して開始15秒以内の即死を完全防止
+    if (stageNum === 1) {
+      st.guardTimer = Math.max(st.guardTimer, 14.0);
+    } else {
+      st.guardTimer = Math.max(st.guardTimer, 3.0);
+    }
+
+    addFloatText(st, FIELD.cx, 290, `STAGE ${stageNum}: ${bDef.name}`, '#fde047', 16);
+  }
+
+  function createGameState(seed) {
+    const rng = createRng(seed);
+    const st = {
+      mode: 'title',
+      headless: false,
+      seed,
+      rng,
+      time: 0,
+      stage: 1,
+      stageTime: 0,
+      stageClearTimer: 0,
+      score: 0,
+      lives: 3,
+      maxLives: 4,
+      invulnTimer: 0,
+      combo: 0,
+      comboTimer: 0,
+      maxCombo: 0,
+      maxBalls: 1,
+      bossesSlain: 0,
+      mp: 45,
+      maxMp: 100,
+      skillCd: 0,
+      fireballTimer: 0,
+      laserTimer: 0,
+      laserFireCd: 0,
+      guardTimer: 0,
+      shakeTimer: 0,
+      shakeAmp: 0,
+      bannerText: '',
+      bannerTimer: 0,
+      bannerColor: '#fde047',
+      deathReason: 'none',
+      outOfBounds: 0,
+      skillsUsed: { smash: 0, multiball: 0, overdrive: 0 },
+      capsulesTaken: { multi2: 0, shot3: 0, fireball: 0, laser: 0, guard: 0 },
+      paddle: {
+        x: FIELD.cx,
+        y: PADDLE_Y,
+        w: 90,
+        h: 14,
+        targetX: FIELD.cx,
+        smashTimer: 0,
+        smashReady: false
+      },
+      isDragging: false,
+      activePointerId: null,
+      pointerStartY: 0,
+      lastPointerY: 0,
+      balls: [],
+      bricks: [],
+      initialBrickCount: 0,
+      boss: null,
+      capsules: [],
+      lasers: [],
+      hazards: [],
+      particles: [],
+      floats: []
+    };
+    buildStage(st, 1);
+    return st;
+  }
+
+  function addParticles(st, x, y, color, count = 6, speed = 130) {
+    if (st.headless) return;
+    const room = MAX_PARTICLES - st.particles.length;
+    const n = Math.min(count, Math.max(0, room));
+    for (let i = 0; i < n; i++) {
+      const ang = st.rng() * Math.PI * 2;
+      const spd = (0.35 + st.rng() * 0.75) * speed;
+      st.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        r: 2 + st.rng() * 2.8,
+        color,
+        life: 0.32 + st.rng() * 0.25,
+        maxLife: 0.55
+      });
+    }
+  }
+
+  function addFloatText(st, x, y, text, color = '#fde047', size = 13) {
+    if (st.headless) return;
+    if (st.floats.length >= MAX_FLOATS) st.floats.shift();
+    st.floats.push({
+      x: Math.max(48, Math.min(LW - 48, x)),
+      y,
+      text,
+      color,
+      size,
+      life: 0.85,
+      maxLife: 0.85
+    });
+  }
+
+  function showBanner(st, text, color = '#fde047', dur = 1.3) {
+    st.bannerText = text;
+    st.bannerColor = color;
+    st.bannerTimer = dur;
+  }
+
+  function triggerShake(st, amp = 5, dur = 0.22) {
+    if (st.headless) return;
+    st.shakeAmp = Math.max(st.shakeAmp, amp);
+    st.shakeTimer = Math.max(st.shakeTimer, dur);
+  }
+
+  function addCombo(st, n = 1) {
+    st.combo += n;
+    st.comboTimer = 2.8;
+    if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+  }
+
+  function comboMultiplier(st) {
+    return Math.min(5.0, 1 + Math.floor(st.combo / 6) * 0.2);
+  }
+
+  // ×2 分裂増殖処理（最大 120 個）
+  function multiplyBalls(st, factor = 2) {
+    const spd = baseBallSpeed(st.stage);
+    if (st.balls.length === 0) {
+      st.balls.push(createBall(st.paddle.x, PADDLE_Y - 18, spd * 0.35, -spd * 0.93, false));
+    }
+    if (st.balls.length < 3) {
+      st.balls.push(createBall(st.paddle.x - 12, PADDLE_Y - 18, -spd * 0.45, -spd * 0.89, false));
+      st.balls.push(createBall(st.paddle.x + 12, PADDLE_Y - 18, spd * 0.45, -spd * 0.89, false));
+    }
+
+    const currentLen = st.balls.length;
+    const toAdd = Math.min(MAX_BALLS - currentLen, currentLen * (factor - 1));
+    for (let i = 0; i < toAdd; i++) {
+      const src = st.balls[i % currentLen];
+      const curSpd = Math.hypot(src.vx, src.vy) || spd;
+      const baseAng = Math.atan2(src.vy, src.vx);
+      const spread = ((i % 2 === 0 ? 1 : -1) * (0.18 + (i % 5) * 0.04));
+      const newAng = baseAng + spread;
+      const nb = createBall(
+        src.x + Math.cos(newAng) * 4,
+        src.y + Math.sin(newAng) * 4,
+        Math.cos(newAng) * curSpd,
+        Math.sin(newAng) * curSpd,
+        src.smash
+      );
+      st.balls.push(nb);
+    }
+    if (st.balls.length > st.maxBalls) st.maxBalls = st.balls.length;
+  }
+
+  // パドルから追加ボール射出
+  function spawnExtraBalls(st, count = 3, isSmash = false) {
+    const spd = baseBallSpeed(st.stage) * (isSmash ? 1.38 : 1.05);
+    const room = MAX_BALLS - st.balls.length;
+    const n = Math.min(count, Math.max(0, room));
+    for (let i = 0; i < n; i++) {
+      const offset = (i - (n - 1) * 0.5) * 0.24;
+      const dx = (st.boss ? st.boss.x : FIELD.cx) - st.paddle.x;
+      const aimAng = Math.atan2(-480, dx) + offset;
+      const nb = createBall(
+        st.paddle.x + offset * 28,
+        PADDLE_Y - 16,
+        Math.cos(aimAng) * spd,
+        Math.sin(aimAng) * spd,
+        isSmash
+      );
+      st.balls.push(nb);
+    }
+    if (st.balls.length > st.maxBalls) st.maxBalls = st.balls.length;
+  }
+
+  // カプセルドロップ判定
+  function maybeDropCapsule(st, x, y, forced = false) {
+    if (st.capsules.length >= 5) return;
+    if (!forced && st.rng() > 0.25) return;
+
+    const r = st.rng();
+    let typeKey = 'multi2';
+    if (st.balls.length < 20) {
+      if (r < 0.36) typeKey = 'multi2';
+      else if (r < 0.60) typeKey = 'shot3';
+      else if (r < 0.78) typeKey = 'fireball';
+      else if (r < 0.90) typeKey = 'laser';
+      else typeKey = 'guard';
+    } else {
+      if (r < 0.24) typeKey = 'multi2';
+      else if (r < 0.44) typeKey = 'shot3';
+      else if (r < 0.68) typeKey = 'fireball';
+      else if (r < 0.88) typeKey = 'laser';
+      else typeKey = 'guard';
+    }
+
+    const def = CAPSULE_TYPES[typeKey];
+    st.capsules.push({
+      x: Math.max(FIELD.left + 22, Math.min(FIELD.right - 22, x)),
+      y,
+      vy: 148 + st.stage * 7,
+      w: 44,
+      h: 20,
+      type: typeKey,
+      def
+    });
+  }
+
+  // カプセル取得効果
+  function applyCapsule(st, cap) {
+    st.capsulesTaken[cap.type] = (st.capsulesTaken[cap.type] || 0) + 1;
+    st.mp = Math.min(st.maxMp, st.mp + 6);
+    addCombo(st, 2);
+    st.score += Math.round(220 * st.stage * comboMultiplier(st));
+    if (!st.headless) {
+      Snd.capsuleGet();
+      Haptics.pulse();
+    }
+
+    if (cap.type === 'multi2') {
+      multiplyBalls(st, 2);
+      addFloatText(st, cap.x, cap.y - 12, `✨ ×2 MULTIBALL! (${st.balls.length}球)`, '#22d3ee', 14);
+    } else if (cap.type === 'shot3') {
+      spawnExtraBalls(st, 3, false);
+      addFloatText(st, cap.x, cap.y - 12, `🟢 +3 SHOT! (${st.balls.length}球)`, '#4ade80', 14);
+    } else if (cap.type === 'fireball') {
+      st.fireballTimer = Math.min(7.5, st.fireballTimer + 5.5);
+      addFloatText(st, cap.x, cap.y - 12, '🔥 FIREBALL 貫通 6s!', '#fb923c', 14);
+    } else if (cap.type === 'laser') {
+      st.laserTimer = Math.min(7.5, st.laserTimer + 5.5);
+      addFloatText(st, cap.x, cap.y - 12, '⚡ LASER PADDLE 6s!', '#fde047', 14);
+    } else if (cap.type === 'guard') {
+      st.guardTimer = Math.min(10.0, st.guardTimer + 7.5);
+      addFloatText(st, cap.x, cap.y - 12, '🛡️ GUARD WALL 8s!', '#c084fc', 14);
+    }
+  }
+
+  // パドルスマッシュ発動（上フリック or タップ）
+  function triggerPaddleSmash(st) {
+    if (st.mode !== 'playing') return;
+    st.paddle.smashTimer = 0.55;
+    const spd = baseBallSpeed(st.stage) * 1.42;
+    let converted = 0;
+    for (let i = 0; i < st.balls.length; i++) {
+      const b = st.balls[i];
+      if (b.y > 495 && Math.abs(b.x - st.paddle.x) < st.paddle.w * 0.95 && converted < 12) {
+        const dx = (st.boss ? st.boss.x : FIELD.cx) - b.x + (st.rng() - 0.5) * 40;
+        const ang = Math.atan2(-500, dx);
+        b.vx = Math.cos(ang) * spd;
+        b.vy = Math.sin(ang) * spd;
+        b.smash = true;
+        normalizeBallVelocity(b, spd);
+        converted++;
+      }
+    }
+    if (converted > 0 && !st.headless) {
+      Snd.paddleHit(true);
+      Haptics.pulse();
+      addFloatText(st, st.paddle.x, PADDLE_Y - 26, '⚡ SMASH SHOT!!', '#fde047', 15);
+    }
+  }
+
+  // 3つの魔導アクティブスキル発動
+  function useSkill(st, key) {
+    if (!st || st.mode !== 'playing' || st.skillCd > 0) return false;
+    if (key === 'smash') {
+      if (st.mp < 30) return false;
+      st.mp -= 30;
+      st.skillCd = 3.2;
+      st.skillsUsed.smash++;
+      st.paddle.smashTimer = 1.2;
+      spawnExtraBalls(st, 2, true);
+      const spd = baseBallSpeed(st.stage) * 1.42;
+      const limit = Math.min(st.balls.length, 10);
+      for (let i = 0; i < limit; i++) {
+        const b = st.balls[i];
+        const dx = (st.boss ? st.boss.x : FIELD.cx) - b.x + (i - limit * 0.5) * 12;
+        const ang = Math.atan2(-500, dx);
+        b.vx = Math.cos(ang) * spd;
+        b.vy = Math.sin(ang) * spd;
+        b.smash = true;
+        normalizeBallVelocity(b, spd);
+      }
+      if (st.boss && st.boss.hp > 0) {
+        const directDmg = st.boss.barrierActive ? 5 : 14;
+        st.boss.hp = Math.max(0, st.boss.hp - directDmg);
+        st.boss.hitFlash = 0.18;
+        if (st.boss.hp <= 0) {
+          onBossCoreDestroyed(st);
+          return true;
+        }
+      }
+      showBanner(st, '⚡ 貫通スマッシュバースト！', '#22d3ee', 1.0);
+      triggerShake(st, 5, 0.2);
+      if (!st.headless) { Snd.paddleHit(true); Haptics.pulse(); }
+      return true;
+    }
+    if (key === 'multiball') {
+      if (st.mp < 45) return false;
+      st.mp -= 45;
+      st.skillCd = 3.4;
+      st.skillsUsed.multiball++;
+      multiplyBalls(st, 2);
+      showBanner(st, `✨ 分裂ノヴァ発動！ (${st.balls.length}球)`, '#4ade80', 1.1);
+      triggerShake(st, 6, 0.22);
+      if (!st.headless) { Snd.capsuleGet(); Haptics.pulse(); }
+      return true;
+    }
+    if (key === 'overdrive') {
+      if (st.mp < 65) return false;
+      st.mp -= 65;
+      st.skillCd = 3.8;
+      st.skillsUsed.overdrive++;
+      st.fireballTimer = Math.max(st.fireballTimer, 4.8);
+      st.laserTimer = Math.max(st.laserTimer, 4.8);
+      st.guardTimer = Math.max(st.guardTimer, 4.5);
+      showBanner(st, '🔥 魔導オーバードライブ解放！！', '#f43f5e', 1.3);
+      triggerShake(st, 8, 0.3);
+      if (!st.headless) { Snd.bossExplode(); Haptics.pulse(); }
+      return true;
+    }
+    return false;
+  }
+
+  // ブロック破壊時の処理（爆裂ルーンの連鎖を含む・キュー処理で配列インデックス不整合を完全防止）
+  function destroyBrickAt(st, idx) {
+    const first = st.bricks[idx];
+    if (!first) return;
+    const queue = [first];
+    st.bricks.splice(idx, 1);
+
+    while (queue.length > 0) {
+      const br = queue.shift();
+      addCombo(st, 1);
+      const mult = comboMultiplier(st);
+      const pts = Math.round((br.type === 'crystal' ? 320 : 110) * st.stage * mult);
+      st.score += pts;
+      const mpScale = 1 / Math.sqrt(Math.max(1, st.balls.length * 0.35));
+      st.mp = Math.min(st.maxMp, st.mp + (br.type === 'crystal' ? 10 : 1.8) * mpScale);
+
+      addParticles(st, br.x, br.y, br.color, 5, 130);
+      if (!st.headless) Snd.brickHit(st.combo, true);
+
+      if (br.type === 'capsule') {
+        maybeDropCapsule(st, br.x, br.y, true);
+      } else {
+        maybeDropCapsule(st, br.x, br.y, false);
+      }
+
+      // 爆裂ルーンブロックなら周囲を誘爆
+      if (br.type === 'bomb') {
+        triggerShake(st, 5, 0.18);
+        addFloatText(st, br.x, br.y, '💥 BOOM!', '#fb923c', 13);
+        for (let j = st.bricks.length - 1; j >= 0; j--) {
+          const nb = st.bricks[j];
+          if (nb && Math.hypot(nb.x - br.x, nb.y - br.y) <= 58) {
+            nb.hp -= 3;
+            nb.hitFlash = 0.15;
+            if (nb.hp <= 0) {
+              st.bricks.splice(j, 1);
+              queue.push(nb);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ボスコア撃破 → 全ブロック一斉誘爆 (STAGE CLEAR!)
+  function onBossCoreDestroyed(st) {
+    if (st.stageClearTimer > 0) return;
+    st.bossesSlain++;
+    const remaining = st.bricks.length;
+    const bonusPerBrick = 380 * st.stage;
+    const totalBonus = remaining * bonusPerBrick + 2400 * st.stage;
+    st.score += totalBonus;
+
+    if (remaining > 0) {
+      addCombo(st, remaining);
+      for (let i = 0; i < st.bricks.length; i++) {
+        const br = st.bricks[i];
+        if (i % 2 === 0) addParticles(st, br.x, br.y, br.color, 3, 160);
+      }
+      st.bricks.length = 0;
+    }
+
+    st.hazards.length = 0;
+    addParticles(st, st.boss.x, st.boss.y, '#fde047', 24, 210);
+    triggerShake(st, 10, 0.45);
+    if (!st.headless) {
+      Snd.bossExplode();
+      Haptics.pulse();
+    }
+
+    // ステージ1〜2クリア時はライフが最大3まで1回復
+    if (st.stage <= 2 && st.lives < 3) st.lives++;
+    st.mp = Math.min(st.maxMp, st.mp + 25);
+
+    showBanner(st, `💥 BOSS CORE 撃破！全${remaining}個一斉誘爆 +${totalBonus.toLocaleString()}!`, '#fde047', 1.3);
+    st.stageClearTimer = 1.15;
+  }
+
+  // 1フレームの物理・ゲーム進行更新（dt クランプ付き）
+  function stepPhysics(st, rawDt) {
+    if (!st || st.mode !== 'playing') return;
+    const dt = Math.min(Math.max(0.001, Number(rawDt) || (1 / 60)), 1 / 30);
+
+    st.time += dt;
+    st.stageTime += dt;
+
+    if (st.invulnTimer > 0) st.invulnTimer = Math.max(0, st.invulnTimer - dt);
+    if (st.skillCd > 0) st.skillCd = Math.max(0, st.skillCd - dt);
+    if (st.comboTimer > 0) {
+      st.comboTimer -= dt;
+      if (st.comboTimer <= 0) st.combo = 0;
+    }
+    if (st.fireballTimer > 0) st.fireballTimer = Math.max(0, st.fireballTimer - dt);
+    if (st.laserTimer > 0) st.laserTimer = Math.max(0, st.laserTimer - dt);
+    if (st.guardTimer > 0) st.guardTimer = Math.max(0, st.guardTimer - dt);
+    if (st.shakeTimer > 0) st.shakeTimer = Math.max(0, st.shakeTimer - dt);
+    if (st.bannerTimer > 0) st.bannerTimer = Math.max(0, st.bannerTimer - dt);
+    if (st.paddle.smashTimer > 0) st.paddle.smashTimer = Math.max(0, st.paddle.smashTimer - dt);
+
+    // MP 自然回復（約4.5 MP/秒）
+    st.mp = Math.min(st.maxMp, st.mp + dt * 4.5);
+
+    // パドル幅とスムーズ追従
+    st.paddle.w = st.laserTimer > 0 ? 102 : 90;
+    const halfW = st.paddle.w * 0.5;
+    st.paddle.targetX = clampPaddleX(st.paddle.targetX, halfW);
+    st.paddle.x += (st.paddle.targetX - st.paddle.x) * Math.min(1, dt * 28);
+    st.paddle.x = clampPaddleX(st.paddle.x, halfW);
+
+    // ステージクリア演出中ならタイマー経過で次ステージへ
+    if (st.stageClearTimer > 0) {
+      st.stageClearTimer -= dt;
+      if (st.stageClearTimer <= 0) {
+        buildStage(st, st.stage + 1);
+      }
+      return;
+    }
+
+    // ブロックのヒットクールダウン更新
+    for (let i = 0; i < st.bricks.length; i++) {
+      const br = st.bricks[i];
+      if (br.hitCd > 0) br.hitCd = Math.max(0, br.hitCd - dt);
+      if (br.hitFlash > 0) br.hitFlash = Math.max(0, br.hitFlash - dt);
+    }
+
+    // ボスコアのバリア解除判定（ステージ経過34秒以上かつブロック48%以上破壊、または経過42秒で解除）
+    if (st.boss && st.boss.barrierActive) {
+      const ratio = st.initialBrickCount > 0 ? (st.bricks.length / st.initialBrickCount) : 0;
+      if ((st.stageTime >= 34 && ratio <= 0.52) || st.stageTime >= 42) {
+        st.boss.barrierActive = false;
+        showBanner(st, '🔓 ボスコアの魔導バリア解除！総攻撃せよ！', '#22d3ee', 1.2);
+      }
+    }
+
+    // ボスコアの左右スイング移動＆ハザード弾発射
+    if (st.boss && st.boss.hp > 0) {
+      const boss = st.boss;
+      if (boss.hitFlash > 0) boss.hitFlash = Math.max(0, boss.hitFlash - dt);
+      if (boss.hitCd > 0) boss.hitCd = Math.max(0, boss.hitCd - dt);
+
+      boss.x += boss.vx * dt;
+      const minBx = FIELD.left + boss.w * 0.5 + 14;
+      const maxBx = FIELD.right - boss.w * 0.5 - 14;
+      if (boss.x < minBx) { boss.x = minBx; boss.vx = Math.abs(boss.vx); }
+      if (boss.x > maxBx) { boss.x = maxBx; boss.vx = -Math.abs(boss.vx); }
+
+      // ボスコアの攻撃（ハザード弾）
+      boss.fireTimer -= dt;
+      if (boss.fireTimer <= 0) {
+        const overloadFactor = st.stageTime > 58 ? 0.55 : (st.stageTime > 38 ? 0.78 : 1.0);
+        boss.fireTimer = Math.max(0.85, boss.fireInterval * overloadFactor);
+
+        const count = boss.spread + (st.stageTime > 60 ? 1 : 0);
+        const hSpd = Math.min(370, 175 + st.stage * 28 + (st.stageTime > 50 ? 45 : 0));
+        for (let i = 0; i < count; i++) {
+          const offset = (i - (count - 1) * 0.5) * 0.25;
+          const dx = st.paddle.x - boss.x;
+          const dy = PADDLE_Y - (boss.y + boss.h * 0.5);
+          const ang = Math.atan2(dy, dx) + offset;
+          st.hazards.push({
+            x: boss.x + offset * 28,
+            y: boss.y + boss.h * 0.5 + 6,
+            vx: Math.cos(ang) * hSpd,
+            vy: Math.max(145, Math.sin(ang) * hSpd),
+            r: 8.0
+          });
+        }
+      }
+    }
+
+    // ⚡ LASER PADDLE 自動連射
+    if (st.laserTimer > 0) {
+      st.laserFireCd -= dt;
+      if (st.laserFireCd <= 0) {
+        st.laserFireCd = 0.24;
+        st.lasers.push({ x: st.paddle.x - halfW + 8, y: PADDLE_Y - 10, vy: -580 });
+        st.lasers.push({ x: st.paddle.x + halfW - 8, y: PADDLE_Y - 10, vy: -580 });
+      }
+    }
+
+    // レーザーの移動と衝突判定
+    for (let i = st.lasers.length - 1; i >= 0; i--) {
+      const lz = st.lasers[i];
+      lz.y += lz.vy * dt;
+      if (lz.y < FIELD.top) {
+        st.lasers.splice(i, 1);
+        continue;
+      }
+      let hit = false;
+      for (let j = st.bricks.length - 1; j >= 0; j--) {
+        const br = st.bricks[j];
+        if (Math.abs(lz.x - br.x) <= br.w * 0.5 + 3 && Math.abs(lz.y - br.y) <= br.h * 0.5 + 6) {
+          br.hp -= 1.0;
+          br.hitFlash = 0.1;
+          st.score += 15 * st.stage;
+          if (br.hp <= 0) destroyBrickAt(st, j);
+          hit = true;
+          break;
+        }
+      }
+      if (!hit && st.boss && st.boss.hp > 0) {
+        const boss = st.boss;
+        if (Math.abs(lz.x - boss.x) <= boss.w * 0.5 + 4 && Math.abs(lz.y - boss.y) <= boss.h * 0.5 + 6) {
+          const dmg = boss.barrierActive ? 0.35 : 1.3;
+          boss.hp = Math.max(0, boss.hp - dmg);
+          boss.hitFlash = 0.08;
+          st.score += 25 * st.stage;
+          hit = true;
+          if (boss.hp <= 0) {
+            st.lasers.splice(i, 1);
+            onBossCoreDestroyed(st);
+            return;
+          }
+        }
+      }
+      if (hit) st.lasers.splice(i, 1);
+    }
+
+    // パドル付近に落下中のボールがあるかチェック（スマッシュ準備インジケータ用）
+    let anyApproaching = false;
+    const baseSpd = baseBallSpeed(st.stage);
+
+    // ボールの移動・壁反射・パドル反射・ブロック＆ボスコア衝突
+    for (let i = st.balls.length - 1; i >= 0; i--) {
+      const b = st.balls[i];
+
+      // サブステップ2分割で高速貫通・すり抜けを防止
+      const subSteps = 2;
+      const sdt = dt / subSteps;
+      let ballRemoved = false;
+
+      for (let s = 0; s < subSteps; s++) {
+        b.x += b.vx * sdt;
+        b.y += b.vy * sdt;
+
+        // 座標異常ガード
+        if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) {
+          st.outOfBounds++;
+          b.x = st.paddle.x;
+          b.y = PADDLE_Y - 20;
+          normalizeBallVelocity(b, baseSpd);
+        }
+
+        // 左右の壁反射
+        if (b.x - b.r < FIELD.left) {
+          b.x = FIELD.left + b.r;
+          b.vx = Math.abs(b.vx);
+          normalizeBallVelocity(b);
+        } else if (b.x + b.r > FIELD.right) {
+          b.x = FIELD.right - b.r;
+          b.vx = -Math.abs(b.vx);
+          normalizeBallVelocity(b);
+        }
+
+        // 上の壁反射
+        if (b.y - b.r < FIELD.top) {
+          b.y = FIELD.top + b.r;
+          b.vy = Math.abs(b.vy);
+          normalizeBallVelocity(b);
+        }
+
+        // パドル接近判定
+        if (b.vy > 0 && b.y > 500 && b.y < PADDLE_Y + 12) {
+          anyApproaching = true;
+        }
+
+        // パドル反射判定
+        if (
+          b.vy > 0 &&
+          b.y + b.r >= PADDLE_Y - st.paddle.h * 0.5 &&
+          b.y - b.r <= PADDLE_Y + st.paddle.h * 0.65 &&
+          Math.abs(b.x - st.paddle.x) <= halfW + b.r + 3
+        ) {
+          b.y = PADDLE_Y - st.paddle.h * 0.5 - b.r;
+          const rel = Math.max(-1, Math.min(1, (b.x - st.paddle.x) / Math.max(10, halfW)));
+          const isSmashHit = st.paddle.smashTimer > 0 || Math.abs(rel) < 0.22;
+          b.smash = isSmashHit;
+
+          const spd = baseSpd * (isSmashHit ? 1.38 : 1.02);
+          if (isSmashHit && st.boss) {
+            const dx = st.boss.x - b.x + rel * 36;
+            const ang = Math.atan2(-500, dx);
+            b.vx = Math.cos(ang) * spd;
+            b.vy = Math.sin(ang) * spd;
+          } else {
+            const bounceAngle = rel * (Math.PI * 0.34);
+            b.vx = Math.sin(bounceAngle) * spd;
+            b.vy = -Math.cos(bounceAngle) * spd;
+          }
+          normalizeBallVelocity(b, spd);
+          const mpGain = (isSmashHit ? 1.2 : 0.4) / Math.sqrt(Math.max(1, st.balls.length * 0.35));
+          st.mp = Math.min(st.maxMp, st.mp + mpGain);
+          if (!st.headless) Snd.paddleHit(isSmashHit);
+        }
+
+        // 🛡️ GUARD WALL（下部反射シールド：ボールの落下を防ぐ）
+        if (st.guardTimer > 0 && b.vy > 0 && b.y + b.r >= GUARD_Y) {
+          b.y = GUARD_Y - b.r;
+          b.vy = -Math.abs(b.vy);
+          normalizeBallVelocity(b);
+        }
+
+        // 画面下へロスト判定
+        if (b.y - b.r > FIELD.bottom) {
+          st.balls.splice(i, 1);
+          ballRemoved = true;
+          break;
+        }
+
+        // ブロックとの衝突判定
+        const piercing = b.smash || st.fireballTimer > 0;
+        for (let j = st.bricks.length - 1; j >= 0; j--) {
+          const br = st.bricks[j];
+          const dx = b.x - br.x;
+          const dy = b.y - br.y;
+          const ox = (br.w * 0.5 + b.r) - Math.abs(dx);
+          const oy = (br.h * 0.5 + b.r) - Math.abs(dy);
+          if (ox > 0 && oy > 0) {
+            if (br.hitCd <= 0) {
+              br.hitCd = 0.055;
+              const dmg = b.smash ? 2.0 : (st.fireballTimer > 0 ? 1.4 : 1.0);
+              br.hp -= dmg;
+              br.hitFlash = 0.12;
+              const mpScale = 1 / Math.max(1, st.balls.length * 0.4);
+              st.mp = Math.min(st.maxMp, st.mp + 0.55 * mpScale);
+              st.score += Math.round(14 * st.stage * comboMultiplier(st));
+
+              if (br.hp <= 0) {
+                destroyBrickAt(st, j);
+              } else if (!st.headless) {
+                Snd.brickHit(st.combo, false);
+              }
+            }
+
+            if (!piercing) {
+              if (ox < oy) {
+                b.x += dx >= 0 ? ox : -ox;
+                b.vx = dx >= 0 ? Math.abs(b.vx) : -Math.abs(b.vx);
+              } else {
+                b.y += dy >= 0 ? oy : -oy;
+                b.vy = dy >= 0 ? Math.abs(b.vy) : -Math.abs(b.vy);
+              }
+              normalizeBallVelocity(b);
+            }
+            break;
+          }
+        }
+
+        // ボスコアとの衝突判定
+        if (st.boss && st.boss.hp > 0) {
+          const boss = st.boss;
+          const dx = b.x - boss.x;
+          const dy = b.y - boss.y;
+          const ox = (boss.w * 0.5 + b.r) - Math.abs(dx);
+          const oy = (boss.h * 0.5 + b.r) - Math.abs(dy);
+          if (ox > 0 && oy > 0) {
+            if (ox < oy) {
+              b.x += dx >= 0 ? ox : -ox;
+              b.vx = dx >= 0 ? Math.abs(b.vx) : -Math.abs(b.vx);
+            } else {
+              b.y += dy >= 0 ? oy : -oy;
+              b.vy = dy >= 0 ? Math.abs(b.vy) : -Math.abs(b.vy);
+            }
+            normalizeBallVelocity(b);
+
+            // ボスコアの被弾レート制御（100球状態でも1ステージ45〜75秒の熱い攻防にする）
+            if (boss.hitCd <= 0) {
+              boss.hitCd = 0.045;
+              const baseHit = b.smash ? 1.55 : (st.fireballTimer > 0 ? 1.0 : 0.78);
+              const timeBoost = st.stageTime > 62 ? 2.2 : (st.stageTime > 48 ? 1.48 : 1.0);
+              const barrierMult = boss.barrierActive ? (b.smash ? 0.28 : 0.14) : timeBoost;
+              const finalDmg = baseHit * barrierMult;
+
+              boss.hp = Math.max(0, boss.hp - finalDmg);
+              boss.hitFlash = 0.09;
+              addCombo(st, 1);
+              st.mp = Math.min(st.maxMp, st.mp + 0.25);
+              st.score += Math.round(35 * st.stage * comboMultiplier(st));
+
+              if (b.smash) b.smash = false;
+
+              if (boss.hp <= 0) {
+                onBossCoreDestroyed(st);
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      if (ballRemoved) continue;
+    }
+
+    st.paddle.smashReady = anyApproaching;
+
+    // 最後の1球をロストした時の処理
+    if (st.balls.length === 0) {
+      st.lives--;
+      st.combo = 0;
+      triggerShake(st, 7, 0.3);
+      if (!st.headless) Snd.damage();
+
+      if (st.lives <= 0) {
+        st.deathReason = 'ball_lost';
+        onGameOver(st);
+        return;
+      } else {
+        st.invulnTimer = 2.0;
+        st.guardTimer = Math.max(st.guardTimer, 3.5);
+        const spd = baseBallSpeed(st.stage);
+        st.balls.push(createBall(st.paddle.x, PADDLE_Y - 18, spd * 0.35, -spd * 0.93, true));
+        st.balls.push(createBall(st.paddle.x - 12, PADDLE_Y - 18, -spd * 0.42, -spd * 0.9, false));
+        addFloatText(st, st.paddle.x, PADDLE_Y - 30, `💔 ライフ減少 (残り${st.lives})`, '#f87171', 14);
+      }
+    }
+
+    // カプセルの落下とパドル取得判定
+    for (let i = st.capsules.length - 1; i >= 0; i--) {
+      const cap = st.capsules[i];
+      cap.y += cap.vy * dt;
+      if (cap.y > PADDLE_Y - 85 && Math.abs(cap.x - st.paddle.x) < halfW + 42) {
+        cap.x += (st.paddle.x - cap.x) * Math.min(1, dt * 6);
+      }
+      if (
+        Math.abs(cap.y - PADDLE_Y) <= st.paddle.h * 0.5 + cap.h * 0.5 + 4 &&
+        Math.abs(cap.x - st.paddle.x) <= halfW + cap.w * 0.5 + 4
+      ) {
+        applyCapsule(st, cap);
+        st.capsules.splice(i, 1);
+        continue;
+      }
+      if (cap.y > FIELD.bottom + 20) {
+        st.capsules.splice(i, 1);
+      }
+    }
+
+    // ボスのハザード弾（対パドル妨害攻撃）の移動と被弾判定
+    for (let i = st.hazards.length - 1; i >= 0; i--) {
+      const hz = st.hazards[i];
+      hz.x += hz.vx * dt;
+      hz.y += hz.vy * dt;
+
+      if (hz.x < FIELD.left + hz.r || hz.x > FIELD.right - hz.r) {
+        hz.vx = -hz.vx;
+      }
+
+      // スマッシュ状態中のパドルならハザード弾を弾き返して消去！
+      if (
+        st.paddle.smashTimer > 0 &&
+        Math.abs(hz.y - PADDLE_Y) <= 20 &&
+        Math.abs(hz.x - st.paddle.x) <= halfW + 10
+      ) {
+        st.hazards.splice(i, 1);
+        st.score += 300;
+        addFloatText(st, hz.x, hz.y - 10, '⚡ SMASH PARRY!', '#22d3ee', 12);
+        continue;
+      }
+
+      // パドルへの被弾判定
+      if (
+        st.invulnTimer <= 0 &&
+        Math.abs(hz.y - PADDLE_Y) <= st.paddle.h * 0.5 + hz.r &&
+        Math.abs(hz.x - st.paddle.x) <= halfW * 0.8 + hz.r
+      ) {
+        st.hazards.splice(i, 1);
+        st.lives--;
+        st.invulnTimer = 2.2;
+        st.combo = 0;
+        // 被弾衝撃で余剰ボールが半減＆守護壁が少し削れる
+        st.guardTimer = Math.max(0, st.guardTimer - 3.5);
+        if (st.balls.length > 4) {
+          st.balls.length = Math.max(2, Math.floor(st.balls.length * 0.5));
+        }
+        triggerShake(st, 8, 0.3);
+        if (!st.headless) Snd.damage();
+        addFloatText(st, st.paddle.x, PADDLE_Y - 26, `💥 ハザード被弾! (残り♥${st.lives})`, '#f43f5e', 14);
+        if (st.lives <= 0) {
+          st.deathReason = 'boss_hazard';
+          onGameOver(st);
+          return;
+        }
+        continue;
+      }
+
+      if (hz.y > FIELD.bottom + 15) {
+        st.hazards.splice(i, 1);
+      }
+    }
+
+    // パーティクル＆フロートテキスト更新
+    if (!st.headless) {
+      for (let i = st.particles.length - 1; i >= 0; i--) {
+        const p = st.particles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        if (p.life <= 0) st.particles.splice(i, 1);
+      }
+      for (let i = st.floats.length - 1; i >= 0; i--) {
+        const f = st.floats[i];
+        f.y -= 28 * dt;
+        f.life -= dt;
+        if (f.life <= 0) st.floats.splice(i, 1);
+      }
+    }
+  }
+
+  /* ================= Canvas 描画 ================= */
+  function roundRectPath(c, x, y, w, h, r) {
+    const rr = Math.min(r, w * 0.5, h * 0.5);
+    c.beginPath();
+    c.moveTo(x + rr, y);
+    c.arcTo(x + w, y, x + w, y + h, rr);
+    c.arcTo(x + w, y + h, x, y + h, rr);
+    c.arcTo(x, y + h, x, y, rr);
+    c.arcTo(x, y, x + w, y, rr);
+    c.closePath();
+  }
+
+  function resizeCanvas() {
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const targetW = Math.round(LW * dpr);
+    const targetH = Math.round(LH * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+  }
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    renderGame();
+  });
+  resizeCanvas();
+
+  function renderGame() {
+    if (!G || G.headless) return;
+    const dpr = canvas.width / LW;
+    const c = ctx;
+    c.save();
+    c.scale(dpr, dpr);
+
+    // 画面シェイクオフセット
+    let sx = 0, sy = 0;
+    if (G.shakeTimer > 0) {
+      sx = (Math.random() * 2 - 1) * G.shakeAmp;
+      sy = (Math.random() * 2 - 1) * G.shakeAmp;
+    }
+    c.translate(sx, sy);
+
+    // 1. 背景グラデーション
+    const bgGrad = c.createLinearGradient(0, 0, 0, LH);
+    bgGrad.addColorStop(0, '#160d2e');
+    bgGrad.addColorStop(0.5, '#1e113a');
+    bgGrad.addColorStop(1, '#0b0617');
+    c.fillStyle = bgGrad;
+    c.fillRect(-10, -10, LW + 20, LH + 20);
+
+    // 2. フィールド枠と魔導グリッド
+    roundRectPath(c, FIELD.left, FIELD.top, FIELD.width, FIELD.height, 14);
+    c.fillStyle = 'rgba(9, 6, 20, 0.85)';
+    c.fill();
+
+    c.save();
+    c.clip();
+    c.strokeStyle = 'rgba(168, 85, 247, 0.08)';
+    c.lineWidth = 1;
+    for (let gx = FIELD.left; gx <= FIELD.right; gx += 31) {
+      c.beginPath(); c.moveTo(gx, FIELD.top); c.lineTo(gx, FIELD.bottom); c.stroke();
+    }
+    for (let gy = FIELD.top; gy <= FIELD.bottom; gy += 31) {
+      c.beginPath(); c.moveTo(FIELD.left, gy); c.lineTo(FIELD.right, gy); c.stroke();
+    }
+    c.restore();
+
+    roundRectPath(c, FIELD.left, FIELD.top, FIELD.width, FIELD.height, 14);
+    c.lineWidth = 2;
+    c.strokeStyle = G.fireballTimer > 0 ? '#fb923c' : (G.laserTimer > 0 ? '#fde047' : 'rgba(244, 63, 94, 0.55)');
+    c.stroke();
+
+    // 3. 上部 HUD バー描画 (y: 10..56)
+    const topBtns = [
+      { x: 12, w: 38, icon: '⏸' },
+      { x: 54, w: 36, icon: Snd.on ? '🔊' : '🔇' },
+      { x: 94, w: 36, icon: '🏆' }
+    ];
+    for (const tb of topBtns) {
+      roundRectPath(c, tb.x, 12, tb.w, 38, 10);
+      c.fillStyle = 'rgba(30, 24, 54, 0.9)';
+      c.fill();
+      c.lineWidth = 1.2;
+      c.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      c.stroke();
+      c.font = '16px sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillStyle = '#fff';
+      c.fillText(tb.icon, tb.x + tb.w * 0.5, 31);
+    }
+
+    // STAGE & ライフ & スコア & ボール数
+    c.textAlign = 'left';
+    c.textBaseline = 'alphabetic';
+    c.font = '900 12px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#22d3ee';
+    c.fillText(`STAGE ${G.stage}`, 138, 25);
+
+    const hearts = '❤️'.repeat(Math.max(0, G.lives)) + '🖤'.repeat(Math.max(0, G.maxLives - G.lives));
+    c.font = '11px sans-serif';
+    c.fillText(hearts, 138, 44);
+
+    c.textAlign = 'right';
+    c.font = '900 16px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = '#fde047';
+    c.fillText(`${G.score.toLocaleString()} pts`, 386, 26);
+
+    c.font = '800 11px "M PLUS Rounded 1c", sans-serif';
+    c.fillStyle = G.balls.length >= 50 ? '#4ade80' : '#cbd5e1';
+    c.fillText(`⚪ ${G.balls.length}/${MAX_BALLS}球  🔥${G.combo} HIT (×${comboMultiplier(G).toFixed(1)})`, 386, 44);
+
+    // 4. ボスコア (BOSS CORE) の描画
+    if (G.boss && G.boss.hp > 0) {
+      const boss = G.boss;
+      const bx = boss.x - boss.w * 0.5;
+      const by = boss.y - boss.h * 0.5;
+
+      roundRectPath(c, bx, by, boss.w, boss.h, 12);
+      c.fillStyle = boss.hitFlash > 0 ? '#ffffff' : 'rgba(28, 16, 48, 0.95)';
+      c.fill();
+      c.lineWidth = 2.5;
+      c.strokeStyle = boss.barrierActive ? '#38bdf8' : boss.coreColor;
+      c.stroke();
+
+      // コア中心の発光オーブ
+      c.beginPath();
+      c.arc(boss.x, boss.y - 4, 13, 0, Math.PI * 2);
+      c.fillStyle = boss.hitFlash > 0 ? '#fff' : boss.coreColor;
+      c.fill();
+
+      // ボス名＆HPバー
+      c.textAlign = 'center';
+      c.font = '900 10px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#f8fafc';
+      c.fillText(`${boss.barrierActive ? '🛡️' : '🎯'} ${boss.name}`, boss.x, by + 13);
+
+      const barW = boss.w - 18;
+      const barX = boss.x - barW * 0.5;
+      const barY = by + boss.h - 13;
+      roundRectPath(c, barX, barY, barW, 7, 3.5);
+      c.fillStyle = 'rgba(0,0,0,0.65)';
+      c.fill();
+
+      const hpRatio = Math.max(0, Math.min(1, boss.hp / boss.maxHp));
+      if (hpRatio > 0) {
+        roundRectPath(c, barX, barY, Math.max(5, barW * hpRatio), 7, 3.5);
+        c.fillStyle = boss.barrierActive ? '#38bdf8' : '#f43f5e';
+        c.fill();
+      }
+    }
+
+    // 5. 魔導ブロック群の描画
+    for (let i = 0; i < G.bricks.length; i++) {
+      const br = G.bricks[i];
+      const x = br.x - br.w * 0.5;
+      const y = br.y - br.h * 0.5;
+      roundRectPath(c, x, y, br.w, br.h, 4);
+      c.fillStyle = br.hitFlash > 0 ? '#ffffff' : br.color;
+      c.fill();
+      c.lineWidth = 1;
+      c.strokeStyle = 'rgba(255,255,255,0.35)';
+      c.stroke();
+
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.font = '900 9.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#090514';
+      let label = br.hp > 1 ? `${Math.ceil(br.hp)}` : '';
+      if (br.type === 'capsule') label = '✦';
+      else if (br.type === 'bomb') label = '💥';
+      else if (br.type === 'crystal') label = '💎';
+      if (label) c.fillText(label, br.x, br.y + 0.5);
+    }
+
+    // 6. 落下カプセル描画
+    for (let i = 0; i < G.capsules.length; i++) {
+      const cap = G.capsules[i];
+      const x = cap.x - cap.w * 0.5;
+      const y = cap.y - cap.h * 0.5;
+      roundRectPath(c, x, y, cap.w, cap.h, 10);
+      c.fillStyle = cap.def.color;
+      c.fill();
+      c.lineWidth = 1.5;
+      c.strokeStyle = cap.def.border;
+      c.stroke();
+
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.font = '900 10px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#090514';
+      c.fillText(cap.def.label, cap.x, cap.y + 0.5);
+    }
+
+    // 7. ボスのハザード妨害弾の描画
+    for (let i = 0; i < G.hazards.length; i++) {
+      const hz = G.hazards[i];
+      c.beginPath();
+      c.arc(hz.x, hz.y, hz.r + 3, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(244, 63, 94, 0.32)';
+      c.fill();
+
+      c.beginPath();
+      c.arc(hz.x, hz.y, hz.r, 0, Math.PI * 2);
+      c.fillStyle = '#f43f5e';
+      c.fill();
+      c.lineWidth = 1.5;
+      c.strokeStyle = '#fde047';
+      c.stroke();
+    }
+
+    // 8. レーザー弾描画
+    c.fillStyle = '#fde047';
+    for (let i = 0; i < G.lasers.length; i++) {
+      const lz = G.lasers[i];
+      c.fillRect(lz.x - 2, lz.y - 8, 4, 16);
+    }
+
+    // 9. 🛡️ GUARD WALL（下部反射シールド）描画
+    if (G.guardTimer > 0) {
+      c.save();
+      c.strokeStyle = '#c084fc';
+      c.lineWidth = 4;
+      c.beginPath();
+      c.moveTo(FIELD.left + 4, GUARD_Y);
+      c.lineTo(FIELD.right - 4, GUARD_Y);
+      c.stroke();
+      c.font = '800 9.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = '#e9d5ff';
+      c.textAlign = 'center';
+      c.fillText(`🛡️ GUARD SHIELD (${G.guardTimer.toFixed(1)}s)`, FIELD.cx, GUARD_Y - 6);
+      c.restore();
+    }
+
+    // 10. 魔導パドル描画
+    const px = G.paddle.x - G.paddle.w * 0.5;
+    const py = PADDLE_Y - G.paddle.h * 0.5;
+    if (G.paddle.smashTimer > 0 || G.paddle.smashReady) {
+      roundRectPath(c, px - 4, py - 4, G.paddle.w + 8, G.paddle.h + 8, 10);
+      c.strokeStyle = G.paddle.smashTimer > 0 ? '#fde047' : 'rgba(34, 211, 238, 0.65)';
+      c.lineWidth = 2;
+      c.stroke();
+    }
+    roundRectPath(c, px, py, G.paddle.w, G.paddle.h, 7);
+    c.fillStyle = G.invulnTimer > 0 && Math.floor(G.time * 12) % 2 === 0
+      ? 'rgba(248, 113, 113, 0.7)'
+      : (G.paddle.smashTimer > 0 ? '#fde047' : '#22d3ee');
+    c.fill();
+
+    // パドル中央のスマッシュコア
+    roundRectPath(c, G.paddle.x - G.paddle.w * 0.16, py + 2, G.paddle.w * 0.32, G.paddle.h - 4, 4);
+    c.fillStyle = '#f43f5e';
+    c.fill();
+
+    // 11. 光球（ボール最大120個）の高速バッチ描画
+    for (let i = 0; i < G.balls.length; i++) {
+      const b = G.balls[i];
+      c.beginPath();
+      c.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      if (b.smash) {
+        c.fillStyle = '#fde047';
+      } else if (G.fireballTimer > 0) {
+        c.fillStyle = '#fb923c';
+      } else {
+        c.fillStyle = '#f8fafc';
+      }
+      c.fill();
+    }
+
+    // 12. パーティクル＆フロートテキスト描画
+    for (let i = 0; i < G.particles.length; i++) {
+      const p = G.particles[i];
+      c.globalAlpha = Math.max(0, p.life / p.maxLife);
+      c.fillStyle = p.color;
+      c.beginPath();
+      c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.globalAlpha = 1;
+
+    c.textAlign = 'center';
+    for (let i = 0; i < G.floats.length; i++) {
+      const f = G.floats[i];
+      c.globalAlpha = Math.max(0, f.life / f.maxLife);
+      c.font = `900 ${f.size}px "M PLUS Rounded 1c", sans-serif`;
+      c.fillStyle = f.color;
+      c.fillText(f.text, f.x, f.y);
+    }
+    c.globalAlpha = 1;
+
+    // バナー表示
+    if (G.bannerTimer > 0 && G.bannerText) {
+      roundRectPath(c, 24, 320, LW - 48, 36, 12);
+      c.fillStyle = 'rgba(9, 5, 20, 0.88)';
+      c.fill();
+      c.lineWidth = 1.5;
+      c.strokeStyle = G.bannerColor;
+      c.stroke();
+      c.font = '900 13px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = G.bannerColor;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(G.bannerText, FIELD.cx, 338);
+    }
+
+    // 13. 下部 MPゲージ ＆ 3大魔導スキルボタン描画 (y: 678..770)
+    const mpBarX = 18, mpBarY = 677, mpBarW = LW - 36, mpBarH = 9;
+    roundRectPath(c, mpBarX, mpBarY, mpBarW, mpBarH, 4.5);
+    c.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    c.fill();
+    const mpRatio = Math.max(0, Math.min(1, G.mp / G.maxMp));
+    if (mpRatio > 0) {
+      roundRectPath(c, mpBarX, mpBarY, Math.max(6, mpBarW * mpRatio), mpBarH, 4.5);
+      c.fillStyle = '#22d3ee';
+      c.fill();
+    }
+
+    const skills = [
+      {
+        key: 'smash',
+        title: '⚡ スマッシュ',
+        sub: '貫通雷撃射出',
+        cost: 30,
+        x: 16,
+        w: 116,
+        color: '#22d3ee',
+        active: G.paddle.smashTimer > 0,
+        ready: G.mp >= 30
+      },
+      {
+        key: 'multiball',
+        title: '✨ ×2分裂',
+        sub: '全ボール倍増',
+        cost: 45,
+        x: 142,
+        w: 116,
+        color: '#4ade80',
+        active: G.balls.length >= 60,
+        ready: G.mp >= 45
+      },
+      {
+        key: 'overdrive',
+        title: '🔥 覚醒解放',
+        sub: '貫通+連射+壁',
+        cost: 65,
+        x: 268,
+        w: 116,
+        color: '#f43f5e',
+        active: G.fireballTimer > 0 && G.laserTimer > 0,
+        ready: G.mp >= 65
+      }
+    ];
+
+    for (const sk of skills) {
+      const by = 691;
+      const bh = 74;
+      roundRectPath(c, sk.x, by, sk.w, bh, 14);
+      c.fillStyle = sk.ready ? 'rgba(28, 22, 54, 0.95)' : 'rgba(15, 14, 30, 0.65)';
+      c.fill();
+      c.lineWidth = sk.ready ? 2 : 1.2;
+      c.strokeStyle = sk.active ? '#fde047' : (sk.ready ? sk.color : 'rgba(148, 163, 184, 0.22)');
+      c.stroke();
+
+      c.textAlign = 'center';
+      c.textBaseline = 'alphabetic';
+      c.font = '900 13.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = sk.ready ? '#ffffff' : '#64748b';
+      c.fillText(sk.title, sk.x + sk.w * 0.5, by + 23);
+
+      c.font = '800 10px "Zen Kaku Gothic New", sans-serif';
+      c.fillStyle = sk.ready ? '#cbd5e1' : '#475569';
+      c.fillText(sk.sub, sk.x + sk.w * 0.5, by + 41);
+
+      roundRectPath(c, sk.x + 20, by + 50, sk.w - 40, 16, 8);
+      c.fillStyle = sk.ready ? sk.color : 'rgba(30, 41, 59, 0.8)';
+      c.fill();
+      c.font = '900 9.5px "M PLUS Rounded 1c", sans-serif';
+      c.fillStyle = sk.ready ? '#090514' : '#64748b';
+      c.fillText(`MP ${sk.cost}`, sk.x + sk.w * 0.5, by + 61);
+    }
+
+    c.restore();
+  }
+
+  /* ================= 画面遷移＆ライフサイクル ================= */
+  let G = createGameState(Date.now());
+
+  function syncOverlays() {
+    $('title-overlay').classList.toggle('hidden', G.mode !== 'title');
+    $('pause-modal').classList.toggle('hidden', G.mode !== 'paused');
+    $('result-modal').classList.toggle('hidden', G.mode !== 'gameover');
+  }
+
+  function startNewGame(seed) {
+    Snd.unlock();
+    G = createGameState(seed !== undefined ? seed : (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)));
+    G.mode = 'playing';
+    syncOverlays();
+    Snd.startBgm();
+    renderGame();
+  }
+
+  function pauseGame() {
+    if (G.mode !== 'playing') return;
+    G.mode = 'paused';
+    G.isDragging = false;
+    Snd.stopBgm();
+    syncOverlays();
+  }
+
+  function resumeGame() {
+    if (G.mode !== 'paused') return;
+    G.mode = 'playing';
+    syncOverlays();
+    Snd.startBgm();
+  }
+
+  function backToTitle() {
+    Snd.stopBgm();
+    G = createGameState(Date.now());
+    G.mode = 'title';
+    syncOverlays();
+    updateUI();
+    renderGame();
+  }
+
+  function onGameOver(st) {
+    if (st.mode === 'gameover') return;
+    st.mode = 'gameover';
+    st.isDragging = false;
+    if (st.headless) return;
+
+    Snd.stopBgm();
+    Snd.gameOver();
+
+    const prevBest = localRec.best_score || 0;
+    const isNewRecord = st.score > prevBest && st.score > 0;
+
+    $('res-score').textContent = st.score.toLocaleString() + ' pts';
+    $('res-stage').textContent = st.stage + ' ST';
+    $('res-balls').textContent = st.maxBalls + ' 個';
+    $('res-combo').textContent = st.maxCombo + ' HIT';
+    $('res-boss-info').textContent = `撃破ボスコア：${st.bossesSlain} 体 / 最大同時球数：${st.maxBalls} 球`;
+    $('res-new-record').classList.toggle('hidden', !isNewRecord);
+    $('res-title').textContent = st.stage >= 4 ? '🎉 魔導戦線 大戦果！' : '魔導戦線 終了！';
+
+    syncOverlays();
+    submitCloudRecord(st.score, st.stage, st.maxBalls, st.maxCombo);
+  }
+
+  /* ================= ポインター入力（左右ドラッグ＆上フリックスマッシュ） ================= */
+  function clientToLogical(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { x: FIELD.cx, y: PADDLE_Y };
+    const x = ((clientX - rect.left) / rect.width) * LW;
+    const y = ((clientY - rect.top) / rect.height) * LH;
+    return {
+      x: Number.isFinite(x) ? x : FIELD.cx,
+      y: Number.isFinite(y) ? y : PADDLE_Y
+    };
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (G.mode !== 'playing') return;
+    Snd.unlock();
+    const pt = clientToLogical(e.clientX, e.clientY);
+
+    // 上部HUDボタン領域
+    if (pt.y < 58) {
+      if (pt.x < 52) { pauseGame(); return; }
+      if (pt.x < 92) { Snd.toggle(); return; }
+      if (pt.x < 134) { showRankingModal(); return; }
+      return;
+    }
+    // 下部スキルバー領域
+    if (pt.y > 685) {
+      if (pt.x < 138) { useSkill(G, 'smash'); return; }
+      if (pt.x < 264) { useSkill(G, 'multiball'); return; }
+      useSkill(G, 'overdrive');
+      return;
+    }
+
+    if (G.isDragging && G.activePointerId !== null && G.activePointerId !== e.pointerId) return;
+    G.isDragging = true;
+    G.activePointerId = e.pointerId;
+    G.pointerStartY = pt.y;
+    G.lastPointerY = pt.y;
+    G.paddle.targetX = clampPaddleX(pt.x, G.paddle.w * 0.5);
+
+    // ボール接近中にタップしたら即座にスマッシュ待機発動
+    if (G.paddle.smashReady) {
+      triggerPaddleSmash(G);
+    }
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (G.mode !== 'playing' || !G.isDragging) return;
+    if (G.activePointerId !== null && e.pointerId !== G.activePointerId) return;
+    const pt = clientToLogical(e.clientX, e.clientY);
+    G.paddle.targetX = clampPaddleX(pt.x, G.paddle.w * 0.5);
+
+    // 上フリック判定（論理座標で12px以上素早く上へ動かしたら⚡貫通スマッシュ発動！）
+    if (G.lastPointerY - pt.y >= 11 || G.pointerStartY - pt.y >= 18) {
+      triggerPaddleSmash(G);
+      G.pointerStartY = pt.y;
+    }
+    G.lastPointerY = pt.y;
+  }, { passive: true });
+
+  function endPointer(e) {
+    if (!G.isDragging) return;
+    if (G.activePointerId !== null && e.pointerId !== undefined && e.pointerId !== G.activePointerId) return;
+    G.isDragging = false;
+    G.activePointerId = null;
+  }
+  window.addEventListener('pointerup', endPointer, { passive: true });
+  window.addEventListener('pointercancel', endPointer, { passive: true });
+
+  /* ================= 単一 requestAnimationFrame ループ保証 ================= */
+  let lastFrameTime = performance.now();
+  function mainLoop(now) {
+    const rawDt = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+    if (G.mode === 'playing') {
+      stepPhysics(G, rawDt);
+    }
+    renderGame();
+    requestAnimationFrame(mainLoop);
+  }
+
+  /* ================= 自動検証＆3段階ボットAI（window.GAME） ================= */
+  function chooseBotAction(st, profile) {
+    if (!st || st.mode !== 'playing') return;
+    const halfW = st.paddle.w * 0.5;
+
+    if (profile === 'novice') {
+      // 初心者AI：ゆっくりボールを追うが、ハザード回避やスキル発動は控えめ
+      let targetBall = null;
+      let maxY = -999;
+      for (let i = 0; i < st.balls.length; i++) {
+        const b = st.balls[i];
+        if (b.vy > 0 && b.y > maxY) {
+          maxY = b.y;
+          targetBall = b;
+        }
+      }
+      if (targetBall) {
+        const err = Math.sin(st.time * 2.7) * 32;
+        const desired = targetBall.x + err;
+        st.paddle.targetX += (desired - st.paddle.targetX) * 0.14;
+      } else {
+        st.paddle.targetX += (FIELD.cx - st.paddle.targetX) * 0.08;
+      }
+      // たまにスキルボタンを押す
+      if (st.mp >= 75 && st.rng() < 0.015) {
+        const keys = ['smash', 'multiball', 'overdrive'];
+        useSkill(st, keys[Math.floor(st.rng() * 3)]);
+      }
+      return;
+    }
+
+    // standard / expert AI
+    const isExpert = profile === 'expert';
+
+    // 1. スキル戦略発動（状況に応じて狙うスキルを決め、MPを溜めて3スキルをバランスよく発動）
+    if (st.skillCd <= 0) {
+      let targetSkill = 'smash';
+      if (st.balls.length < (isExpert ? 42 : 28)) {
+        targetSkill = 'multiball';
+      } else if (st.fireballTimer <= 0 && (st.bricks.length >= 10 || st.guardTimer <= 2.0)) {
+        targetSkill = 'overdrive';
+      }
+      if (targetSkill === 'multiball' && st.mp >= 45) {
+        useSkill(st, 'multiball');
+      } else if (targetSkill === 'overdrive' && st.mp >= 65) {
+        useSkill(st, 'overdrive');
+      } else if (targetSkill === 'smash' && st.mp >= 30) {
+        useSkill(st, 'smash');
+      }
+    }
+
+    // 2. パドルにボールが近づいたら上フリックスマッシュを発動
+    if (st.paddle.smashReady && st.paddle.smashTimer <= 0 && st.rng() < (isExpert ? 0.18 : 0.07)) {
+      triggerPaddleSmash(st);
+    }
+
+    // 3. パドル目標X座標の決定（落下球の死守 ＞ カプセル回収 ＞ ボスハザード回避）
+    let urgentBall = null;
+    let lowestY = -1;
+    for (let i = 0; i < st.balls.length; i++) {
+      const b = st.balls[i];
+      if (b.vy > 0 && b.y > lowestY) {
+        lowestY = b.y;
+        urgentBall = b;
+      }
+    }
+
+    let desiredX = st.paddle.targetX;
+    if (urgentBall && (st.balls.length <= 5 || st.guardTimer <= 0.5) && urgentBall.y > 350) {
+      const dtToPaddle = Math.max(0, (PADDLE_Y - urgentBall.y) / Math.max(100, urgentBall.vy));
+      let predX = urgentBall.x + urgentBall.vx * dtToPaddle;
+      if (predX < FIELD.left) predX = FIELD.left + (FIELD.left - predX);
+      if (predX > FIELD.right) predX = FIELD.right - (predX - FIELD.right);
+      const jitter = isExpert ? 3 : 16;
+      desiredX = predX + Math.sin(st.time * 4.7) * jitter;
+    } else if (st.capsules.length > 0) {
+      let bestCap = st.capsules[0];
+      for (let i = 1; i < st.capsules.length; i++) {
+        if (st.capsules[i].y > bestCap.y) bestCap = st.capsules[i];
+      }
+      desiredX = bestCap.x;
+    } else if (urgentBall) {
+      desiredX = urgentBall.x;
+    } else {
+      desiredX = st.boss ? st.boss.x : FIELD.cx;
+    }
+
+    // 4. ボスのハザード弾がパドル直前に迫っている場合の回避判断
+    const reactY = isExpert ? PADDLE_Y - 115 : PADDLE_Y - 58;
+    const safeMargin = isExpert ? halfW + 16 : halfW - 2;
+    for (let i = 0; i < st.hazards.length; i++) {
+      const hz = st.hazards[i];
+      if (hz.y > reactY && hz.y < PADDLE_Y + 10) {
+        if (Math.abs(hz.x - desiredX) < safeMargin) {
+          if (st.balls.length > 1 || st.guardTimer > 0.5) {
+            desiredX = hz.x < FIELD.cx ? Math.min(FIELD.right - halfW, hz.x + halfW + 32) : Math.max(FIELD.left + halfW, hz.x - halfW - 32);
+          }
+        }
+      }
+    }
+
+    const trackRate = isExpert ? 0.38 : 0.20;
+    st.paddle.targetX += (desiredX - st.paddle.targetX) * trackRate;
+    st.paddle.targetX = clampPaddleX(st.paddle.targetX, halfW);
+  }
+
+  window.GAME = {
+    step(frames = 1, input = {}) {
+      const n = Math.max(1, Math.min(3600, Math.floor(Number(frames) || 1)));
+      if (input.start && G.mode !== 'playing') startNewGame(input.seed);
+      if (input.pause && G.mode === 'playing') pauseGame();
+      if (input.resume && G.mode === 'paused') resumeGame();
+      if (input.retry) startNewGame(input.seed);
+      if (input.title) backToTitle();
+      if (input.x !== undefined) {
+        G.paddle.targetX = clampPaddleX(Number(input.x), G.paddle.w * 0.5);
+      }
+      if (input.smash) {
+        triggerPaddleSmash(G);
+      }
+      if (input.skill) {
+        useSkill(G, String(input.skill));
+      }
+      for (let i = 0; i < n; i++) {
+        if (input.bot && G.mode === 'playing') {
+          chooseBotAction(G, String(input.bot));
+        }
+        if (G.mode === 'playing') {
+          stepPhysics(G, 1 / 60);
+        }
+      }
+      renderGame();
+      return this.state();
+    },
+
+    state() {
+      return {
+        mode: G.mode,
+        score: G.score,
+        bestScore: localRec.best_score || 0,
+        stage: G.stage,
+        lives: G.lives,
+        hp: G.lives,
+        balls: G.balls.length,
+        maxBalls: G.maxBalls,
+        combo: G.combo,
+        maxCombo: G.maxCombo,
+        mp: Math.round(G.mp * 10) / 10,
+        bossHp: G.boss ? Math.round(G.boss.hp * 10) / 10 : 0,
+        bossMaxHp: G.boss ? G.boss.maxHp : 0,
+        bossBarrier: G.boss ? G.boss.barrierActive : false,
+        bricksRemaining: G.bricks.length,
+        capsulesCount: G.capsules.length,
+        hazardsCount: G.hazards.length,
+        paddleX: Math.round(G.paddle.x * 10) / 10,
+        fireballTimer: Math.round(G.fireballTimer * 100) / 100,
+        laserTimer: Math.round(G.laserTimer * 100) / 100,
+        guardTimer: Math.round(G.guardTimer * 100) / 100,
+        time: Math.round(G.time * 100) / 100,
+        stageTime: Math.round(G.stageTime * 100) / 100,
+        skillsUsed: Object.assign({}, G.skillsUsed),
+        capsulesTaken: Object.assign({}, G.capsulesTaken),
+        outOfBounds: G.outOfBounds,
+        errorCount: errorLog.length,
+        errors: errorLog.slice(-5)
+      };
+    },
+
+    sim(runs = 30, botProfile = 'standard') {
+      const count = Math.max(1, Math.min(200, Math.floor(Number(runs) || 30)));
+      const profile = ['novice', 'standard', 'expert'].includes(botProfile) ? botProfile : 'standard';
+      let totalScore = 0, totalTime = 0, totalStage = 0, totalMaxBalls = 0, totalMaxCombo = 0, totalBosses = 0, totalOOB = 0;
+      let minTime = 99999, maxScore = 0, minScore = 99999999;
+      let totalStage1ClearSec = 0, stage1Clears = 0;
+      const stageDistribution = {};
+      const deathReasons = { ball_lost: 0, boss_hazard: 0, time_limit: 0 };
+      const skillsTotal = { smash: 0, multiball: 0, overdrive: 0 };
+      const capsulesTotal = { multi2: 0, shot3: 0, fireball: 0, laser: 0, guard: 0 };
+
+      for (let r = 0; r < count; r++) {
+        const st = createGameState(2026 + r * 7919 + profile.charCodeAt(0) * 193);
+        st.mode = 'playing';
+        st.headless = true;
+        const maxFrames = 60 * 300; // 最大5分(300秒)
+        let st1ClearRecorded = false;
+        for (let f = 0; f < maxFrames && st.mode === 'playing'; f++) {
+          chooseBotAction(st, profile);
+          stepPhysics(st, 1 / 60);
+          if (!st1ClearRecorded && (st.stage >= 2 || st.bossesSlain >= 1)) {
+            st1ClearRecorded = true;
+            stage1Clears++;
+            totalStage1ClearSec += st.time;
+          }
+        }
+        if (st.mode === 'gameover') {
+          deathReasons[st.deathReason] = (deathReasons[st.deathReason] || 0) + 1;
+        } else {
+          deathReasons.time_limit++;
+        }
+
+        totalScore += st.score;
+        totalTime += st.time;
+        totalStage += st.stage;
+        totalMaxBalls += st.maxBalls;
+        totalMaxCombo += st.maxCombo;
+        totalBosses += st.bossesSlain;
+        totalOOB += st.outOfBounds;
+        if (st.time < minTime) minTime = st.time;
+        if (st.score > maxScore) maxScore = st.score;
+        if (st.score < minScore) minScore = st.score;
+        stageDistribution[st.stage] = (stageDistribution[st.stage] || 0) + 1;
+        skillsTotal.smash += st.skillsUsed.smash;
+        skillsTotal.multiball += st.skillsUsed.multiball;
+        skillsTotal.overdrive += st.skillsUsed.overdrive;
+        for (const k of Object.keys(capsulesTotal)) {
+          capsulesTotal[k] += st.capsulesTaken[k] || 0;
+        }
+      }
+
+      return {
+        profile,
+        runs: count,
+        avgScore: Math.round(totalScore / count),
+        minScore,
+        maxScore,
+        avgSurvivalSec: Math.round((totalTime / count) * 10) / 10,
+        minSurvivalSec: Math.round(minTime * 10) / 10,
+        avgStage: Math.round((totalStage / count) * 100) / 100,
+        avgMaxBalls: Math.round((totalMaxBalls / count) * 10) / 10,
+        avgMaxCombo: Math.round((totalMaxCombo / count) * 10) / 10,
+        avgBossesSlain: Math.round((totalBosses / count) * 100) / 100,
+        stage1ClearRate: Math.round((stage1Clears / count) * 1000) / 10,
+        avgStage1ClearSec: stage1Clears > 0 ? Math.round((totalStage1ClearSec / stage1Clears) * 10) / 10 : 0,
+        stageDistribution,
+        skillsTotal,
+        capsulesTotal,
+        deathReasons,
+        outOfBoundsCount: totalOOB
+      };
+    },
+
+    submitTestRecord: submitCloudRecord
+  };
+
   /* ================= イベント登録・起動 ================= */
   $('me-btn').onclick = () => { if (acct.token) showAccountMenu(); else showAuth('login'); };
   $('rank-btn').onclick = showRankingModal;
+  $('hud-rank-btn').onclick = showRankingModal;
   $('rank-close-btn').onclick = () => $('rank-modal').classList.add('hidden');
-  $('start-btn').onclick = () => {
-    Snd.unlock();
-    Snd.beep(880, 0.1);
-    toast('🛠️ 企画・基盤準備完了！次回セッションでゲーム本編を実装します');
-  };
+
+  $('start-btn').onclick = () => startNewGame();
+  $('pause-btn').onclick = () => pauseGame();
+  $('snd-btn').onclick = () => Snd.toggle();
+
+  $('skill-smash').onclick = () => useSkill(G, 'smash');
+  $('skill-multi').onclick = () => useSkill(G, 'multiball');
+  $('skill-overdrive').onclick = () => useSkill(G, 'overdrive');
+
+  $('resume-btn').onclick = () => resumeGame();
+  $('retry-btn').onclick = () => startNewGame();
+  $('pause-rank-btn').onclick = showRankingModal;
+  $('pause-acct-btn').onclick = () => { if (acct.token) showAccountMenu(); else showAuth('login'); };
+  $('title-btn').onclick = () => backToTitle();
+
+  $('result-retry-btn').onclick = () => startNewGame();
+  $('result-rank-btn').onclick = showRankingModal;
+  $('result-title-btn').onclick = () => backToTitle();
 
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+  window.addEventListener('visibilitychange', () => {
+    if (document.hidden && G.mode === 'playing') pauseGame();
+  });
+
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
   async function boot() {
     updateUI();
+    const isDebug = /[?&]debug\b/.test(location.search);
     if (!acct.token) {
-      showAuth('login');
+      if (!isDebug) showAuth('login');
       return;
     }
     try {
@@ -577,6 +2828,9 @@ html, body {
       loadCloudRecords();
     } catch (e) {}
   }
+
+  // メイン描画ループ開始（1回のみ起動）
+  requestAnimationFrame(mainLoop);
 
   if (gateNeeded()) {
     $('gate-modal').classList.remove('hidden');
